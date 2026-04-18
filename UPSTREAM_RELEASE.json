@@ -5,5 +5,5 @@
   "release_name": "v1.0.2",
   "tag": "pkg-v1.0.2",
   "commit": "05de4abcaea84ad538beb4f5c025b62108321c65",
-  "notes": "Pinned in gcs-plugins/quality-meter/package.json and resolved from the plugin-local package install."
+  "notes": "Pinned in package.json. The host serves models/ from the plugin-local package install via dependency_asset_roots."
 }

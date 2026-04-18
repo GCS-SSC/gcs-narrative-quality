@@ -15,5 +15,12 @@
   "config_ui_entry": "ui/config.json",
   "runtime_ui_entry": "ui/runtime.json",
   "client_worker_entry": "client/worker.js",
+  "dependency_asset_roots": [
+    {
+      "public_prefix": "models/",
+      "package": "@browser-quality-scorer/core",
+      "package_path": "models/"
+    }
+  ],
   "declared_routes": []
 }

@@ -1,0 +1,19 @@
+{
+  "key": "quality-meter",
+  "version": "0.2.0",
+  "host_api_version": "1",
+  "name_en": "Quality Meter",
+  "name_fr": "Compteur de qualité",
+  "description_en": "Scores narrative field quality and renders a lightweight meter.",
+  "description_fr": "Évalue la qualité des champs narratifs et affiche un compteur léger.",
+  "execution": "client",
+  "supported_targets": [
+    "agreement_top_level",
+    "assessment_review_alignment_narrative",
+    "assessment_question_comment"
+  ],
+  "config_ui_entry": "ui/config.json",
+  "runtime_ui_entry": "ui/runtime.json",
+  "client_worker_entry": "client/worker.js",
+  "declared_routes": []
+}

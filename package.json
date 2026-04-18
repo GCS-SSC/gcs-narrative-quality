@@ -1,0 +1,14 @@
+{
+  "name": "@gcs-ssc/quality-meter-plugin",
+  "type": "module",
+  "scripts": {
+    "build:worker": "bun x esbuild client/worker-source.js --bundle --format=esm --platform=browser --target=es2022 --outfile=client/worker.js"
+  },
+  "dependencies": {
+    "@browser-quality-scorer/core": "github:omarmir/quality-meter#pkg-v1.0.2",
+    "@huggingface/transformers": "^4.1.0"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.0"
+  }
+}

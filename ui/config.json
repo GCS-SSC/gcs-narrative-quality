@@ -1,0 +1,601 @@
+{
+  "type": "stack",
+  "children": [
+    {
+      "type": "notice",
+      "value": {
+        "en": "Configure the scoring prompt and weighted criteria used for this target.",
+        "fr": "Configurez la question et les critères pondérés utilisés pour cette cible."
+      }
+    },
+    {
+      "type": "section",
+      "badge": "02",
+      "label": {
+        "en": "English Runtime",
+        "fr": "Exécution anglaise"
+      },
+      "description": {
+        "en": "Used for `_en` fields and any English runtime context.",
+        "fr": "Utilisé pour les champs `_en` et tout contexte d'exécution anglais."
+      },
+      "children": [
+        {
+          "type": "textarea",
+          "key": "question.en",
+          "rows": 4,
+          "label": {
+            "en": "Question",
+            "fr": "Question"
+          }
+        },
+        {
+          "type": "collection",
+          "key": "criteria.en",
+          "presentation": "accordion",
+          "label": {
+            "en": "Criteria",
+            "fr": "Critères"
+          },
+          "description": {
+            "en": "Add each quality check and assign its relative weight.",
+            "fr": "Ajoutez chaque vérification de qualité et attribuez-lui un poids relatif."
+          },
+          "add_label": {
+            "en": "Add Criterion",
+            "fr": "Ajouter un critère"
+          },
+          "empty_label": {
+            "en": "No English criteria configured.",
+            "fr": "Aucun critère anglais configuré."
+          },
+          "item_title_key": "label",
+          "item_title_label": {
+            "en": "Criterion",
+            "fr": "Critère"
+          },
+          "item_schema": {
+            "type": "group",
+            "children": [
+              {
+                "type": "input",
+                "key": "label",
+                "label": {
+                  "en": "Criterion",
+                  "fr": "Critère"
+                }
+              },
+              {
+                "type": "number",
+                "key": "weight",
+                "label": {
+                  "en": "Weight",
+                  "fr": "Poids"
+                },
+                "min": 0.1,
+                "max": 10,
+                "step": 0.1,
+                "default_value": 1
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "type": "section",
+      "badge": "03",
+      "label": {
+        "en": "French Runtime",
+        "fr": "Exécution française"
+      },
+      "description": {
+        "en": "Used for `_fr` fields and any French runtime context.",
+        "fr": "Utilisé pour les champs `_fr` et tout contexte d'exécution français."
+      },
+      "children": [
+        {
+          "type": "textarea",
+          "key": "question.fr",
+          "rows": 4,
+          "label": {
+            "en": "Question",
+            "fr": "Question"
+          }
+        },
+        {
+          "type": "collection",
+          "key": "criteria.fr",
+          "presentation": "accordion",
+          "label": {
+            "en": "Criteria",
+            "fr": "Critères"
+          },
+          "description": {
+            "en": "Add each quality check and assign its relative weight.",
+            "fr": "Ajoutez chaque vérification de qualité et attribuez-lui un poids relatif."
+          },
+          "add_label": {
+            "en": "Add Criterion",
+            "fr": "Ajouter un critère"
+          },
+          "empty_label": {
+            "en": "No French criteria configured.",
+            "fr": "Aucun critère français configuré."
+          },
+          "item_title_key": "label",
+          "item_title_label": {
+            "en": "Criterion",
+            "fr": "Critère"
+          },
+          "item_schema": {
+            "type": "group",
+            "children": [
+              {
+                "type": "input",
+                "key": "label",
+                "label": {
+                  "en": "Criterion",
+                  "fr": "Critère"
+                }
+              },
+              {
+                "type": "number",
+                "key": "weight",
+                "label": {
+                  "en": "Weight",
+                  "fr": "Poids"
+                },
+                "min": 0.1,
+                "max": 10,
+                "step": 0.1,
+                "default_value": 1
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "type": "accordion",
+      "label": {
+        "en": "Adaptive Refinement",
+        "fr": "Affinage adaptatif"
+      },
+      "default_open": false,
+      "description": {
+        "en": "Choose whether to always refine, never refine, or let the fast pass decide.",
+        "fr": "Choisissez s’il faut toujours affiner, ne jamais affiner ou laisser la passe rapide décider."
+      },
+      "children": [
+        {
+          "type": "select",
+          "key": "request_config.adaptiveRefinementPolicy",
+          "label": {
+            "en": "Policy",
+            "fr": "Politique"
+          },
+          "description": {
+            "en": "Choose whether to always refine, never refine, or let the fast pass decide.",
+            "fr": "Choisissez s’il faut toujours affiner, ne jamais affiner ou laisser la passe rapide décider."
+          },
+          "default_value": "adaptive",
+          "options": [
+            {
+              "value": "adaptive",
+              "label": {
+                "en": "Adaptive",
+                "fr": "Adaptatif"
+              }
+            },
+            {
+              "value": "always",
+              "label": {
+                "en": "Always run full",
+                "fr": "Toujours exécuter la passe complète"
+              }
+            },
+            {
+              "value": "never",
+              "label": {
+                "en": "Never refine",
+                "fr": "Ne jamais affiner"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "accordion",
+      "label": {
+        "en": "Adaptive Thresholds",
+        "fr": "Seuils adaptatifs"
+      },
+      "default_open": false,
+      "description": {
+        "en": "Tune when the plugin stops after the fast pass or continues to the full pass.",
+        "fr": "Ajustez le moment où le plugin s’arrête après la passe rapide ou poursuit la passe complète."
+      },
+      "children": [
+        {
+          "type": "group",
+          "children": [
+            {
+              "type": "number",
+              "key": "request_config.adaptiveRefinement.lowStopOverallPercent",
+              "label": {
+                "en": "Low-stop overall %",
+                "fr": "Arrêt bas global %"
+              },
+              "description": {
+                "en": "Fast results at or below this overall score can be accepted as obvious failures.",
+                "fr": "Les résultats rapides à ce score global ou moins peuvent être acceptés comme des échecs évidents."
+              },
+              "min": 0,
+              "max": 100,
+              "step": 1,
+              "default_value": 10
+            },
+            {
+              "type": "number",
+              "key": "request_config.adaptiveRefinement.lowStopAnswerSupport",
+              "label": {
+                "en": "Low-stop answer support",
+                "fr": "Soutien de réponse pour l’arrêt bas"
+              },
+              "description": {
+                "en": "Requires the answer-validity signal to be weak before the fast pass is trusted.",
+                "fr": "Exige que le signal de validité de la réponse soit faible avant de faire confiance à la passe rapide."
+              },
+              "min": 0,
+              "max": 1,
+              "step": 0.01,
+              "default_value": 0.25
+            }
+          ]
+        },
+        {
+          "type": "group",
+          "children": [
+            {
+              "type": "number",
+              "key": "request_config.adaptiveRefinement.lowStopMaxCriterionPercent",
+              "label": {
+                "en": "Low-stop max criterion %",
+                "fr": "Critère maximal pour l’arrêt bas %"
+              },
+              "description": {
+                "en": "Even the strongest criterion must stay below this level for the fast pass to stop early.",
+                "fr": "Même le critère le plus fort doit rester sous ce niveau pour que la passe rapide s’arrête tôt."
+              },
+              "min": 0,
+              "max": 100,
+              "step": 1,
+              "default_value": 15
+            },
+            {
+              "type": "number",
+              "key": "request_config.adaptiveRefinement.lowStopSecondaryOverallBuffer",
+              "label": {
+                "en": "Secondary overall buffer",
+                "fr": "Marge secondaire globale"
+              },
+              "description": {
+                "en": "Lets near-failing fast results stop early when most criteria are still clearly weak.",
+                "fr": "Permet aux résultats rapides proches de l’échec de s’arrêter tôt lorsque la plupart des critères restent nettement faibles."
+              },
+              "min": 0,
+              "max": 100,
+              "step": 1,
+              "default_value": 5
+            }
+          ]
+        },
+        {
+          "type": "group",
+          "children": [
+            {
+              "type": "number",
+              "key": "request_config.adaptiveRefinement.lowStopLowCriterionShare",
+              "label": {
+                "en": "Low-criterion share",
+                "fr": "Part des critères faibles"
+              },
+              "description": {
+                "en": "The share of criteria that must remain weak before the secondary low-stop is used.",
+                "fr": "La part des critères qui doit rester faible avant d’utiliser l’arrêt bas secondaire."
+              },
+              "min": 0,
+              "max": 1,
+              "step": 0.01,
+              "default_value": 0.66
+            },
+            {
+              "type": "number",
+              "key": "request_config.adaptiveRefinement.highStopWeakAnswerGate",
+              "label": {
+                "en": "High-stop weak-answer gate",
+                "fr": "Seuil de réponse faible pour l’arrêt haut"
+              },
+              "description": {
+                "en": "The weak-answer gate must stay above this floor before a strong fast result is trusted.",
+                "fr": "Le seuil de réponse faible doit rester au-dessus de ce plancher avant qu’un résultat rapide fort soit jugé fiable."
+              },
+              "min": 0,
+              "max": 1,
+              "step": 0.01,
+              "default_value": 1
+            }
+          ]
+        },
+        {
+          "type": "group",
+          "children": [
+            {
+              "type": "number",
+              "key": "request_config.adaptiveRefinement.highStopOverallPercent",
+              "label": {
+                "en": "High-stop overall %",
+                "fr": "Arrêt haut global %"
+              },
+              "description": {
+                "en": "Fast results above this score may skip refinement if the rest of the strong-stop checks also pass.",
+                "fr": "Les résultats rapides au-dessus de ce score peuvent sauter l’affinage si les autres contrôles d’arrêt fort passent aussi."
+              },
+              "min": 0,
+              "max": 100,
+              "step": 1,
+              "default_value": 100
+            },
+            {
+              "type": "number",
+              "key": "request_config.adaptiveRefinement.highStopMinCriterionPercent",
+              "label": {
+                "en": "High-stop min criterion %",
+                "fr": "Critère minimal pour l’arrêt haut %"
+              },
+              "description": {
+                "en": "Every criterion must clear this minimum before a strong fast result can be accepted.",
+                "fr": "Chaque critère doit dépasser ce minimum avant qu’un résultat rapide fort puisse être accepté."
+              },
+              "min": 0,
+              "max": 100,
+              "step": 1,
+              "default_value": 100
+            }
+          ]
+        },
+        {
+          "type": "group",
+          "children": [
+            {
+              "type": "number",
+              "key": "request_config.adaptiveRefinement.highStopSpreadPercent",
+              "label": {
+                "en": "High-stop spread %",
+                "fr": "Écart pour l’arrêt haut %"
+              },
+              "description": {
+                "en": "Limits how uneven the criterion scores can be when you allow fast strong answers to stop early.",
+                "fr": "Limite à quel point les scores des critères peuvent être inégaux lorsque des réponses rapides fortes s’arrêtent tôt."
+              },
+              "min": 0,
+              "max": 100,
+              "step": 1,
+              "default_value": 0
+            },
+            {
+              "type": "switch",
+              "key": "request_config.adaptiveRefinement.disableHighStopForConstraintQuestions",
+              "label": {
+                "en": "Disable high-stop for constraint-sensitive questions",
+                "fr": "Désactiver l’arrêt haut pour les questions sensibles aux contraintes"
+              },
+              "description": {
+                "en": "Forces a full pass when the prompt includes explicit limits such as budgets, caps, or time bounds.",
+                "fr": "Force une passe complète lorsque l’invite contient des limites explicites comme des budgets, des plafonds ou des échéances."
+              },
+              "default_value": true
+            }
+          ]
+        },
+        {
+          "type": "group",
+          "children": [
+            {
+              "type": "switch",
+              "key": "request_config.adaptiveRefinement.disableHighStopForComparison",
+              "label": {
+                "en": "Disable high-stop for comparison tasks",
+                "fr": "Désactiver l’arrêt haut pour les tâches de comparaison"
+              },
+              "description": {
+                "en": "Keeps comparison prompts on the safer full-pass path even when the fast score looks strong.",
+                "fr": "Garde les invites de comparaison sur la voie plus sûre de la passe complète même lorsque le score rapide semble fort."
+              },
+              "default_value": true
+            },
+            {
+              "type": "switch",
+              "key": "request_config.adaptiveRefinement.disableHighStopForPlanning",
+              "label": {
+                "en": "Disable high-stop for planning tasks",
+                "fr": "Désactiver l’arrêt haut pour les tâches de planification"
+              },
+              "description": {
+                "en": "Keeps multi-step planning prompts on the full-pass path where structure is checked more carefully.",
+                "fr": "Garde les invites de planification en plusieurs étapes sur la voie de la passe complète où la structure est vérifiée plus soigneusement."
+              },
+              "default_value": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "accordion",
+      "label": {
+        "en": "Display Bands",
+        "fr": "Bandes d’affichage"
+      },
+      "default_open": false,
+      "description": {
+        "en": "Control the score bands and returned UI tone without changing the underlying score calculation.",
+        "fr": "Contrôlez les bandes de score et le ton retourné par l’interface sans changer le calcul du score."
+      },
+      "children": [
+        {
+          "type": "group",
+          "children": [
+            {
+              "type": "number",
+              "key": "request_config.presentation.mixedFitMinPercent",
+              "label": {
+                "en": "Mixed-fit minimum %",
+                "fr": "Minimum adéquation partielle %"
+              },
+              "description": {
+                "en": "Scores at or above this percent move from off-track into the mixed-fit band.",
+                "fr": "Les scores à ce pourcentage ou plus passent de hors trajectoire à la bande d’adéquation partielle."
+              },
+              "min": 0,
+              "max": 100,
+              "step": 1,
+              "default_value": 45
+            },
+            {
+              "type": "number",
+              "key": "request_config.presentation.strongFitMinPercent",
+              "label": {
+                "en": "Strong-fit minimum %",
+                "fr": "Minimum bonne adéquation %"
+              },
+              "description": {
+                "en": "Scores at or above this percent move from mixed-fit into strong-fit.",
+                "fr": "Les scores à ce pourcentage ou plus passent d’adéquation partielle à bonne adéquation."
+              },
+              "min": 0,
+              "max": 100,
+              "step": 1,
+              "default_value": 70
+            }
+          ]
+        },
+        {
+          "type": "group",
+          "children": [
+            {
+              "type": "select",
+              "key": "request_config.presentation.toneByBand.off_track",
+              "label": {
+                "en": "Off-track tone",
+                "fr": "Ton hors trajectoire"
+              },
+              "description": {
+                "en": "Sets the UI tone returned for the off-track band without changing the numeric score.",
+                "fr": "Définit le ton d’interface retourné pour la bande hors trajectoire sans changer le score numérique."
+              },
+              "default_value": "error",
+              "options": [
+                {
+                  "value": "error",
+                  "label": {
+                    "en": "Error",
+                    "fr": "Erreur"
+                  }
+                },
+                {
+                  "value": "warning",
+                  "label": {
+                    "en": "Warning",
+                    "fr": "Avertissement"
+                  }
+                },
+                {
+                  "value": "success",
+                  "label": {
+                    "en": "Success",
+                    "fr": "Succès"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "select",
+              "key": "request_config.presentation.toneByBand.mixed_fit",
+              "label": {
+                "en": "Mixed-fit tone",
+                "fr": "Ton adéquation partielle"
+              },
+              "description": {
+                "en": "Sets the UI tone returned for the mixed-fit band without rerunning the model.",
+                "fr": "Définit le ton d’interface retourné pour la bande d’adéquation partielle sans relancer le modèle."
+              },
+              "default_value": "warning",
+              "options": [
+                {
+                  "value": "error",
+                  "label": {
+                    "en": "Error",
+                    "fr": "Erreur"
+                  }
+                },
+                {
+                  "value": "warning",
+                  "label": {
+                    "en": "Warning",
+                    "fr": "Avertissement"
+                  }
+                },
+                {
+                  "value": "success",
+                  "label": {
+                    "en": "Success",
+                    "fr": "Succès"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "select",
+          "key": "request_config.presentation.toneByBand.strong_fit",
+          "label": {
+            "en": "Strong-fit tone",
+            "fr": "Ton bonne adéquation"
+          },
+          "description": {
+            "en": "Sets the UI tone returned for the strong-fit band without changing the calculated percent.",
+            "fr": "Définit le ton d’interface retourné pour la bande de bonne adéquation sans changer le pourcentage calculé."
+          },
+          "default_value": "success",
+          "options": [
+            {
+              "value": "error",
+              "label": {
+                "en": "Error",
+                "fr": "Erreur"
+              }
+            },
+            {
+              "value": "warning",
+              "label": {
+                "en": "Warning",
+                "fr": "Avertissement"
+              }
+            },
+            {
+              "value": "success",
+              "label": {
+                "en": "Success",
+                "fr": "Succès"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "type": "stack",
+  "children": [
+    {
+      "type": "meter",
+      "bind": "overallPercent",
+      "pending_bind": "statusLabel"
+    },
+    {
+      "type": "group",
+      "children": [
+        {
+          "type": "badge",
+          "bind": "statusLabel"
+        },
+        {
+          "type": "activity",
+          "bind": "activity"
+        }
+      ]
+    }
+  ]
+}

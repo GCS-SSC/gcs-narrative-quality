@@ -1,4 +1,4 @@
-import { defineGcsExtension } from '../../shared/utils/extensions'
+import { defineGcsExtension } from '@gcs-ssc/extensions'
 
 export default defineGcsExtension({
   key: 'gcs-narrative-quality',

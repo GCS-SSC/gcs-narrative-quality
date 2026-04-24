@@ -1,7 +1,21 @@
 /* eslint-disable jsdoc/require-jsdoc */
-import { AssessmentDefinitionSchema } from '../../../../../../../../shared/types/schemas/assessment/assessment'
-import { resolveExtensionStreamContext } from '../../../../../../../../server/utils/extensions'
-import { getReviewSchemaEffectiveContent } from '../../../../../../../../server/utils/review-schema-versioning'
+import {
+  AssessmentDefinitionSchema,
+  getReviewSchemaEffectiveContent,
+  resolveExtensionStreamContext
+} from '@gcs-ssc/extensions/server'
+import type { ReviewSchemaContentSource } from '@gcs-ssc/extensions/server'
+
+interface AssessmentSetRow {
+  id: unknown
+}
+
+interface AssessmentSchemaRow extends ReviewSchemaContentSource {
+  id: unknown
+  egcs_cn_name_en: string
+  egcs_cn_name_fr: string
+  egcs_cn_version: unknown
+}
 
 const buildQuestionKey = (sectionName: string, subSectionName: string, questionName: string) =>
   `${sectionName}::${subSectionName}::${questionName}`
@@ -74,7 +88,7 @@ export default async (event: Parameters<EventHandler>[0]) => {
     .where('Common_Review_Set_Setup.egcs_cn_scopetype', '=', 'transferpaymentstream')
     .where('Common_Review_Set_Setup.egcs_cn_scopeid', '=', streamId)
     .where('Common_Review_Set_Setup._deleted', '=', false)
-    .execute()
+    .execute() as AssessmentSetRow[]
 
   const assessmentSetIds = assessmentSets.map(item => String(item.id))
   if (assessmentSetIds.length === 0) {
@@ -102,7 +116,7 @@ export default async (event: Parameters<EventHandler>[0]) => {
     .where('Common_Review_Schema.egcs_cn_reviewtype', '=', 'assessment')
     .orderBy('Common_Review_Schema.egcs_cn_name_en', 'asc')
     .orderBy('Common_Review_Schema.id', 'asc')
-    .execute()
+    .execute() as AssessmentSchemaRow[]
 
   const items = Array.from(new Map(rows.map(row => [String(row.id), row])).values()).map(row => {
     const effectiveContent = getReviewSchemaEffectiveContent(row)

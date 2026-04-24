@@ -2,7 +2,7 @@
 /* eslint-disable jsdoc/require-jsdoc */
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import type { Ref } from 'vue'
-import type { GcsExtensionJsonConfig } from '~~/shared/utils/extensions'
+import type { GcsExtensionJsonConfig } from '@gcs-ssc/extensions'
 import {
   normalizeNarrativeQualityConfig,
   resolveNarrativeQualityTargetConfig,

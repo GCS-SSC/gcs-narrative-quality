@@ -10,7 +10,7 @@ var __export = (target, all) => {
     __defProp(target, name, { get: all[name], enumerable: true });
 };
 
-// node_modules/onnxruntime-web/dist/ort.webgpu.bundle.min.mjs
+// ../../node_modules/.bun/onnxruntime-web@1.26.0-dev.20260416-b7804b056c/node_modules/onnxruntime-web/dist/ort.webgpu.bundle.min.mjs
 var ort_webgpu_bundle_min_exports = {};
 __export(ort_webgpu_bundle_min_exports, {
   InferenceSession: () => qf,
@@ -1968,7 +1968,7 @@ async function es(a = {}) {
         Te(`invalid type for getValue: ${t}`);
     }
   }, r.UTF8ToString = ct, r.stringToUTF8 = Pe, r.lengthBytesUTF8 = _e;
-  var lo, po, Dr, Wt, xe, pt, mo, ho, yo, bo, wo, go, To, vo, Eo, So, Ao, Pr, _r, Rr, Nr, Et, kr, Io, Wr, xo, Lo, Oo, Fr, Bo, Mo, Gr, N, St, Co, D, Ft, P, Uo, $r, Do, Po, _o, zr, Ro, No, ko, Wo, Fo, Go, $o, zo, Vo, jo, Ho, Yo, qo, Jo, Xo, Qo, Zo, Ko, ea, ta, ra, na, oa, aa, sa, ia, ua, fa, ca, da, la, pa, ma, ha, ya, ba, wa, ga, ke, of = [qe, yr, En, Ln, On, Bn, Mn, Cn, Un, Dn, Pn, _n, Rn, Nn, kn, Wn, Qn, Zn, Kn, ao, so, io, uo, fo, co], Vr = { 969132: (e, t, n, o, u) => {
+  var lo, po, Dr, Wt, xe, pt, mo, ho, yo, bo, wo, go, To, vo, Eo, So, Ao, Pr, _r, Rr, Nr, Et, kr, Io, Wr, xo, Lo, Oo, Fr, Bo, Mo, Gr, N, St, Co, D, Ft, P, Uo, $r, Do, Po, _o, zr, Ro, No, ko, Wo, Fo, Go, $o, zo, Vo, jo, Ho, Yo, qo, Jo, Xo, Qo, Zo, Ko, ea, ta, ra, na, oa, aa, sa, ia, ua, fa, ca, da, la, pa, ma, ha, ya, ba, wa, ga, ke, of = [qe, yr, En, Ln, On, Bn, Mn, Cn, Un, Dn, Pn, _n, Rn, Nn, kn, Wn, Qn, Zn, Kn, ao, so, io, uo, fo, co], Vr = { 970348: (e, t, n, o, u) => {
     if (r === void 0 || !r.Uc) return 1;
     if ((e = ct(Number(e >>> 0))).startsWith("./") && (e = e.substring(2)), !(e = r.Uc.get(e))) return 2;
     if (t = Number(t >>> 0), n = Number(n >>> 0), o = Number(o >>> 0), t + n > e.byteLength) return 3;
@@ -1988,11 +1988,11 @@ async function es(a = {}) {
     } catch {
       return 4;
     }
-  }, 969956: (e, t, n) => {
+  }, 971172: (e, t, n) => {
     r.Sd(e, (p(), J).subarray(t >>> 0, t + n >>> 0));
-  }, 970020: () => r.le(), 970062: (e) => {
+  }, 971236: () => r.le(), 971278: (e) => {
     r.jd(e);
-  }, 970099: () => typeof wasmOffsetConverter < "u" };
+  }, 971315: () => typeof wasmOffsetConverter < "u" };
   function af(e, t, n, o) {
     var u = P();
     try {
@@ -3899,7 +3899,7 @@ var Gs = k(() => {
 Ve();
 Ve();
 Ve();
-var Ja = "1.26.0-dev.20260410-5e55544225";
+var Ja = "1.26.0-dev.20260416-b7804b056c";
 var gl = Zr;
 {
   let a = (Gs(), $t(Fs)).wasmBackend;
@@ -3907,10 +3907,10 @@ var gl = Zr;
 }
 Object.defineProperty(K.versions, "web", { value: Ja, enumerable: true });
 
-// node_modules/onnxruntime-common/dist/esm/version.js
+// ../../node_modules/.bun/onnxruntime-common@1.24.3/node_modules/onnxruntime-common/dist/esm/version.js
 var version = "1.24.3";
 
-// node_modules/onnxruntime-common/dist/esm/env-impl.js
+// ../../node_modules/.bun/onnxruntime-common@1.24.3/node_modules/onnxruntime-common/dist/esm/env-impl.js
 var logLevelValue = "warning";
 var env = {
   wasm: {},
@@ -3932,7 +3932,7 @@ var env = {
 };
 Object.defineProperty(env, "logLevel", { enumerable: true });
 
-// node_modules/onnxruntime-common/dist/esm/tensor-conversion-impl.js
+// ../../node_modules/.bun/onnxruntime-common@1.24.3/node_modules/onnxruntime-common/dist/esm/tensor-conversion-impl.js
 var tensorToDataURL = (tensor, options) => {
   const canvas = typeof document !== "undefined" ? document.createElement("canvas") : new OffscreenCanvas(1, 1);
   canvas.width = tensor.dims[3];
@@ -4091,7 +4091,7 @@ var tensorToImageData = (tensor, options) => {
   return image;
 };
 
-// node_modules/onnxruntime-common/dist/esm/tensor-factory-impl.js
+// ../../node_modules/.bun/onnxruntime-common@1.24.3/node_modules/onnxruntime-common/dist/esm/tensor-factory-impl.js
 var bufferToTensor = (buffer, options) => {
   if (buffer === void 0) {
     throw new Error("Image buffer must be defined");
@@ -4300,7 +4300,7 @@ var tensorFromMLTensor = (mlTensor, options) => {
 };
 var tensorFromPinnedBuffer = (type, buffer, dims) => new Tensor({ location: "cpu-pinned", type, data: buffer, dims: dims ?? [buffer.length] });
 
-// node_modules/onnxruntime-common/dist/esm/tensor-impl-type-mapping.js
+// ../../node_modules/.bun/onnxruntime-common@1.24.3/node_modules/onnxruntime-common/dist/esm/tensor-impl-type-mapping.js
 var NUMERIC_TENSOR_TYPE_TO_TYPEDARRAY_MAP = /* @__PURE__ */ new Map([
   ["float32", Float32Array],
   ["uint8", Uint8Array],
@@ -4349,7 +4349,7 @@ var checkTypedArray = () => {
   }
 };
 
-// node_modules/onnxruntime-common/dist/esm/tensor-utils-impl.js
+// ../../node_modules/.bun/onnxruntime-common@1.24.3/node_modules/onnxruntime-common/dist/esm/tensor-utils-impl.js
 var calculateSize = (dims) => {
   let size = 1;
   for (let i = 0; i < dims.length; i++) {
@@ -4401,7 +4401,7 @@ var tensorReshape = (tensor, dims) => {
   }
 };
 
-// node_modules/onnxruntime-common/dist/esm/tensor-impl.js
+// ../../node_modules/.bun/onnxruntime-common@1.24.3/node_modules/onnxruntime-common/dist/esm/tensor-impl.js
 var Tensor = class {
   /**
    * implementation.
@@ -4668,10 +4668,10 @@ var Tensor = class {
   }
 };
 
-// node_modules/onnxruntime-common/dist/esm/tensor.js
+// ../../node_modules/.bun/onnxruntime-common@1.24.3/node_modules/onnxruntime-common/dist/esm/tensor.js
 var Tensor2 = Tensor;
 
-// node_modules/@huggingface/transformers/dist/transformers.web.js
+// ../../node_modules/.bun/@huggingface+transformers@4.2.0/node_modules/@huggingface/transformers/dist/transformers.web.js
 var __defProp2 = Object.defineProperty;
 var __export2 = (target, all) => {
   for (var name in all)
@@ -4680,7 +4680,7 @@ var __export2 = (target, all) => {
 var node_fs_default = {};
 var node_path_default = {};
 var node_url_default = {};
-var VERSION = "4.1.0";
+var VERSION = "4.2.0";
 var HAS_SELF = typeof self !== "undefined";
 var IS_FS_AVAILABLE = !isEmpty(node_fs_default);
 var IS_PATH_AVAILABLE = !isEmpty(node_path_default);
@@ -22483,110 +22483,70 @@ function getNormalizedConfig(config) {
   }
   return normalized_config;
 }
-function getCacheShapes(config, options) {
+function getCacheNames(config, options) {
   if (!(config instanceof PretrainedConfig)) {
     config = new PretrainedConfig(config);
   }
-  const batch_size = options?.batch_size ?? 1;
+  const pkv_prefix = options?.prefix ?? "past_key_values";
+  const conv_prefix = pkv_prefix === "present" ? "present" : "past";
+  const names = /* @__PURE__ */ new Set();
   if (["lfm2", "lfm2_moe"].includes(config.model_type)) {
-    const pkv_prefix = options?.prefix ?? "past_key_values";
-    const conv_prefix = pkv_prefix === "present" ? "present" : "past";
-    const cache_values = {};
-    const { layer_types, num_attention_heads, num_key_value_heads, hidden_size, conv_L_cache } = (
+    const { layer_types } = (
       /** @type {any} */
       config
     );
-    const head_dim = hidden_size / num_attention_heads;
     for (let i = 0; i < layer_types.length; ++i) {
       if (layer_types[i] === "full_attention") {
-        for (const kv of ["key", "value"]) {
-          cache_values[`${pkv_prefix}.${i}.${kv}`] = [batch_size, num_key_value_heads, 0, head_dim];
-        }
+        names.add(`${pkv_prefix}.${i}.key`);
+        names.add(`${pkv_prefix}.${i}.value`);
       } else if (layer_types[i] === "conv") {
-        cache_values[`${conv_prefix}_conv.${i}`] = [batch_size, hidden_size, conv_L_cache];
+        names.add(`${conv_prefix}_conv.${i}`);
       } else {
         throw new Error(`Unsupported layer type: ${layer_types[i]}`);
       }
     }
-    return cache_values;
+    return names;
   } else if (["granitemoehybrid", "falcon_h1", "nemotron_h"].includes(config.model_type)) {
-    const pkv_prefix = options?.prefix ?? "past_key_values";
-    const conv_prefix = pkv_prefix === "present" ? "present" : "past";
     const c = (
       /** @type {any} */
       config
     );
     const layer_types = c.layer_types ?? c.layers_block_type;
     const num_layers = c.num_hidden_layers ?? layer_types?.length;
-    const num_key_value_heads = c.num_key_value_heads;
-    const head_dim = c.head_dim ?? c.hidden_size / c.num_attention_heads;
-    const mamba_n_heads = c.mamba_n_heads ?? c.mamba_num_heads;
-    const mamba_d_head = c.mamba_d_head ?? c.mamba_head_dim;
-    const mamba_d_state = c.mamba_d_state ?? c.ssm_state_size;
-    const mamba_n_groups = c.mamba_n_groups ?? c.n_groups;
-    const mamba_d_conv = c.mamba_d_conv ?? c.conv_kernel;
-    const mamba_d_ssm = c.mamba_d_ssm ?? (c.mamba_expand ? c.mamba_expand * c.hidden_size : mamba_n_heads * mamba_d_head);
-    const conv_d_inner = mamba_d_ssm + 2 * mamba_n_groups * mamba_d_state;
-    const cache_values = {};
     for (let i = 0; i < num_layers; ++i) {
       if (!layer_types || layer_types[i] === "mamba") {
-        cache_values[`${conv_prefix}_conv.${i}`] = [batch_size, conv_d_inner, mamba_d_conv];
-        cache_values[`${conv_prefix}_ssm.${i}`] = [batch_size, mamba_n_heads, mamba_d_head, mamba_d_state];
+        names.add(`${conv_prefix}_conv.${i}`);
+        names.add(`${conv_prefix}_ssm.${i}`);
       }
       if (!layer_types || layer_types[i] === "attention") {
-        for (const kv of ["key", "value"]) {
-          cache_values[`${pkv_prefix}.${i}.${kv}`] = [batch_size, num_key_value_heads, 0, head_dim];
-        }
+        names.add(`${pkv_prefix}.${i}.key`);
+        names.add(`${pkv_prefix}.${i}.value`);
       }
     }
-    return cache_values;
+    return names;
   } else if (["qwen3_next", "qwen3_5_text", "qwen3_5_moe_text", "olmo_hybrid"].includes(config.model_type)) {
-    const pkv_prefix = options?.prefix ?? "past_key_values";
-    const conv_prefix = pkv_prefix === "present" ? "present" : "past";
-    const cache_values = {};
-    const {
-      head_dim,
-      layer_types,
-      num_attention_heads,
-      num_key_value_heads,
-      hidden_size,
-      linear_num_value_heads,
-      linear_num_key_heads,
-      linear_key_head_dim,
-      linear_value_head_dim,
-      linear_conv_kernel_dim
-    } = (
+    const { layer_types } = (
       /** @type {any} */
       config
     );
-    const key_dim = linear_key_head_dim * linear_num_key_heads;
-    const value_dim = linear_value_head_dim * linear_num_value_heads;
-    const final_head_dim = head_dim ?? hidden_size / num_attention_heads;
     for (let i = 0; i < layer_types.length; ++i) {
       if (layer_types[i] === "full_attention") {
-        for (const kv of ["key", "value"]) {
-          cache_values[`${pkv_prefix}.${i}.${kv}`] = [batch_size, num_key_value_heads, 0, final_head_dim];
-        }
+        names.add(`${pkv_prefix}.${i}.key`);
+        names.add(`${pkv_prefix}.${i}.value`);
       } else if (layer_types[i] === "linear_attention") {
         if (config.model_type === "olmo_hybrid") {
-          cache_values[`${conv_prefix}_conv.${i}.key`] = [batch_size, key_dim, linear_conv_kernel_dim];
-          cache_values[`${conv_prefix}_conv.${i}.value`] = [batch_size, value_dim, linear_conv_kernel_dim];
-          cache_values[`${conv_prefix}_conv.${i}.query`] = [batch_size, key_dim, linear_conv_kernel_dim];
+          names.add(`${conv_prefix}_conv.${i}.key`);
+          names.add(`${conv_prefix}_conv.${i}.value`);
+          names.add(`${conv_prefix}_conv.${i}.query`);
         } else {
-          const conv_dim = key_dim * 2 + value_dim;
-          cache_values[`${conv_prefix}_conv.${i}`] = [batch_size, conv_dim, linear_conv_kernel_dim];
+          names.add(`${conv_prefix}_conv.${i}`);
         }
-        cache_values[`${conv_prefix}_recurrent.${i}`] = [
-          batch_size,
-          linear_num_value_heads,
-          linear_key_head_dim,
-          linear_value_head_dim
-        ];
+        names.add(`${conv_prefix}_recurrent.${i}`);
       } else {
         throw new Error(`Unsupported layer type: ${layer_types[i]}`);
       }
     }
-    return cache_values;
+    return names;
   } else if (["gemma4", "gemma4_text"].includes(config.model_type)) {
     const c = (
       /** @type {any} */
@@ -22595,22 +22555,14 @@ function getCacheShapes(config, options) {
         config.text_config
       ) : config
     );
-    const pkv_prefix = options?.prefix ?? "past_key_values";
-    const cache_values = {};
     const num_hidden_layers = c.num_hidden_layers;
     const num_kv_shared_layers = c.num_kv_shared_layers ?? 0;
     const num_kv_layers = num_hidden_layers - num_kv_shared_layers;
-    const num_key_value_heads = c.num_key_value_heads;
-    const head_dim = c.head_dim;
-    const global_head_dim = c.global_head_dim ?? head_dim;
-    const layer_types = c.layer_types ?? [];
     for (let i = 0; i < num_kv_layers; ++i) {
-      const dim = layer_types[i] === "full_attention" ? global_head_dim : head_dim;
-      for (const kv of ["key", "value"]) {
-        cache_values[`${pkv_prefix}.${i}.${kv}`] = [batch_size, num_key_value_heads, 0, dim];
-      }
+      names.add(`${pkv_prefix}.${i}.key`);
+      names.add(`${pkv_prefix}.${i}.value`);
     }
-    return cache_values;
+    return names;
   } else if (["lfm2_vl", "qwen3_5", "qwen3_5_moe", "voxtral_realtime"].includes(config.model_type)) {
     let subConfig;
     if (config.model_type === "voxtral_realtime" && options?.session_name === "audio_encoder") {
@@ -22620,61 +22572,31 @@ function getCacheShapes(config, options) {
       subConfig = /** @type {any} */
       config.text_config;
     }
-    return getCacheShapes(subConfig, options);
+    return getCacheNames(subConfig, options);
   }
-  return getKeyValueShapes(config, options);
+  return getKeyValueNames(config, { prefix: pkv_prefix });
 }
-function getKeyValueShapes(config, { prefix = "past_key_values", batch_size = 1 } = {}) {
-  const decoderFeeds = {};
+function getKeyValueNames(config, { prefix = "past_key_values" } = {}) {
+  const names = /* @__PURE__ */ new Set();
   const normalized_config = config.normalized_config;
   if (normalized_config.is_encoder_decoder && "num_encoder_heads" in normalized_config && "num_decoder_heads" in normalized_config) {
-    const encoder_dim_kv = normalized_config.encoder_dim_kv ?? normalized_config.encoder_hidden_size / normalized_config.num_encoder_heads;
-    const decoder_dim_kv = normalized_config.decoder_dim_kv ?? normalized_config.decoder_hidden_size / normalized_config.num_decoder_heads;
-    const encoder_dims = [batch_size, normalized_config.num_encoder_heads, 0, encoder_dim_kv];
-    const decoder_dims = [batch_size, normalized_config.num_decoder_heads, 0, decoder_dim_kv];
     for (let i = 0; i < normalized_config.num_decoder_layers; ++i) {
-      decoderFeeds[`${prefix}.${i}.encoder.key`] = encoder_dims;
-      decoderFeeds[`${prefix}.${i}.encoder.value`] = encoder_dims;
-      decoderFeeds[`${prefix}.${i}.decoder.key`] = decoder_dims;
-      decoderFeeds[`${prefix}.${i}.decoder.value`] = decoder_dims;
+      names.add(`${prefix}.${i}.encoder.key`);
+      names.add(`${prefix}.${i}.encoder.value`);
+      names.add(`${prefix}.${i}.decoder.key`);
+      names.add(`${prefix}.${i}.decoder.value`);
+    }
+  } else if (normalized_config.multi_query) {
+    for (let i = 0; i < normalized_config.num_layers; ++i) {
+      names.add(`${prefix}.${i}.key_value`);
     }
   } else {
-    const num_heads = normalized_config.num_heads;
-    const num_layers = normalized_config.num_layers;
-    const dim_kv = normalized_config.dim_kv ?? normalized_config.hidden_size / (normalized_config.num_attention_heads ?? num_heads);
-    if (normalized_config.model_type === "falcon") {
-      const dims = [batch_size * num_heads, 0, dim_kv];
-      for (let i = 0; i < num_layers; ++i) {
-        decoderFeeds[`${prefix}.${i}.key`] = dims;
-        decoderFeeds[`${prefix}.${i}.value`] = dims;
-      }
-    } else if (normalized_config.multi_query) {
-      const dims = [batch_size * num_heads, 0, 2 * dim_kv];
-      for (let i = 0; i < num_layers; ++i) {
-        decoderFeeds[`${prefix}.${i}.key_value`] = dims;
-      }
-    } else if (normalized_config.model_type === "bloom") {
-      const keyDims = [batch_size * num_heads, dim_kv, 0];
-      const valueDims = [batch_size * num_heads, 0, dim_kv];
-      for (let i = 0; i < num_layers; ++i) {
-        decoderFeeds[`${prefix}.${i}.key`] = keyDims;
-        decoderFeeds[`${prefix}.${i}.value`] = valueDims;
-      }
-    } else if (normalized_config.model_type === "openelm") {
-      for (let i = 0; i < num_layers; ++i) {
-        const dims = [batch_size, num_heads[i], 0, dim_kv];
-        decoderFeeds[`${prefix}.${i}.key`] = dims;
-        decoderFeeds[`${prefix}.${i}.value`] = dims;
-      }
-    } else {
-      const dims = [batch_size, num_heads, 0, dim_kv];
-      for (let i = 0; i < num_layers; ++i) {
-        decoderFeeds[`${prefix}.${i}.key`] = dims;
-        decoderFeeds[`${prefix}.${i}.value`] = dims;
-      }
+    for (let i = 0; i < normalized_config.num_layers; ++i) {
+      names.add(`${prefix}.${i}.key`);
+      names.add(`${prefix}.${i}.value`);
     }
   }
-  return decoderFeeds;
+  return names;
 }
 var PretrainedConfig = class _PretrainedConfig {
   // NOTE: Typo in original
@@ -22811,11 +22733,6 @@ async function getSession(pretrained_model_name_or_path, fileName, options, cach
   !apis.IS_NODE_ENV && selectedDtype === DATA_TYPES.fp16 && !await isWebGpuFp16Supported()) {
     throw new Error(`The device (${selectedDevice}) does not support fp16.`);
   }
-  const kv_cache_dtype_config = custom_config.kv_cache_dtype;
-  const kv_cache_dtype = kv_cache_dtype_config ? typeof kv_cache_dtype_config === "string" ? kv_cache_dtype_config : kv_cache_dtype_config[selectedDtype] ?? "float32" : void 0;
-  if (kv_cache_dtype && !["float32", "float16"].includes(kv_cache_dtype)) {
-    throw new Error(`Invalid kv_cache_dtype: ${kv_cache_dtype}. Should be one of: float32, float16`);
-  }
   const suffix = DEFAULT_DTYPE_SUFFIX_MAPPING[selectedDtype];
   const session_options = { ...options.session_options };
   session_options.executionProviders ??= executionProviders;
@@ -22840,14 +22757,14 @@ async function getSession(pretrained_model_name_or_path, fileName, options, cach
   if (externalData.length > 0 && (!apis.IS_NODE_ENV || externalData.some((data) => typeof data !== "string"))) {
     session_options.externalData = externalData;
   }
-  if (cache_config && selectedDevice === "webgpu" && kv_cache_dtype_config !== false) {
-    const shapes = getCacheShapes(options.config, {
+  if (cache_config && selectedDevice === "webgpu") {
+    const names = getCacheNames(options.config, {
       prefix: "present",
       session_name
     });
-    if (Object.keys(shapes).length > 0 && !isONNXProxy()) {
+    if (names.size > 0 && !isONNXProxy()) {
       const preferredOutputLocation = {};
-      for (const key in shapes) {
+      for (const key of names) {
         preferredOutputLocation[key] = "gpu-buffer";
       }
       session_options.preferredOutputLocation = preferredOutputLocation;
@@ -22856,7 +22773,6 @@ async function getSession(pretrained_model_name_or_path, fileName, options, cach
   const buffer_or_path = await bufferOrPathPromise;
   const session_config = {
     dtype: selectedDtype,
-    kv_cache_dtype,
     device: selectedDevice
   };
   return { buffer_or_path, session_options, session_config };
@@ -25235,6 +25151,12 @@ function getAttentions(model_output) {
   }
   return attentions;
 }
+function resolveCacheShape(metadataShape, symbols) {
+  return metadataShape.map((d) => {
+    if (typeof d === "number") return d;
+    return symbols[d] ?? 0;
+  });
+}
 function addPastKeyValues(self2, decoderFeeds, pastKeyValues) {
   if (pastKeyValues && Object.keys(pastKeyValues).length > 0) {
     Object.assign(decoderFeeds, pastKeyValues);
@@ -25242,15 +25164,21 @@ function addPastKeyValues(self2, decoderFeeds, pastKeyValues) {
   }
   const session = self2.sessions["decoder_model_merged"] ?? self2.sessions["model"];
   const batch_size = (decoderFeeds[self2.main_input_name] ?? decoderFeeds.attention_mask)?.dims?.[0] ?? 1;
-  const dtype = session?.config?.kv_cache_dtype ?? "float32";
-  const cls = dtype === "float16" ? DataTypeMap.float16 : DataTypeMap.float32;
-  const shapes = getCacheShapes(self2.config, { batch_size });
+  const names = getCacheNames(self2.config);
+  const num_heads = self2.config?.normalized_config?.num_heads;
+  const symbols = { batch_size };
+  if (typeof num_heads === "number") {
+    symbols["batch_size x num_heads"] = batch_size * num_heads;
+  }
   const entries = /* @__PURE__ */ Object.create(null);
-  for (const name in shapes) {
-    const size = shapes[name].reduce((a, b) => a * b, 1);
-    const t = new Tensor22(dtype, new cls(size), shapes[name]);
-    decoderFeeds[name] = t;
-    entries[name] = t;
+  for (const meta of session.inputMetadata) {
+    if (!names.has(meta.name)) continue;
+    const shape = resolveCacheShape(meta.shape, symbols);
+    const size = shape.reduce((a, b) => a * b, 1);
+    const cls = DataTypeMap[meta.type];
+    const t = new Tensor22(meta.type, new cls(size), shape);
+    decoderFeeds[meta.name] = t;
+    entries[meta.name] = t;
   }
   if (pastKeyValues) {
     pastKeyValues.update(entries);
@@ -25932,6 +25860,9 @@ __export2(models_exports, {
   OlmoHybridPreTrainedModel: () => OlmoHybridPreTrainedModel,
   OlmoModel: () => OlmoModel,
   OlmoPreTrainedModel: () => OlmoPreTrainedModel,
+  OpenAIPrivacyFilterForTokenClassification: () => OpenAIPrivacyFilterForTokenClassification,
+  OpenAIPrivacyFilterModel: () => OpenAIPrivacyFilterModel,
+  OpenAIPrivacyFilterPreTrainedModel: () => OpenAIPrivacyFilterPreTrainedModel,
   OpenELMForCausalLM: () => OpenELMForCausalLM,
   OpenELMModel: () => OpenELMModel,
   OpenELMPreTrainedModel: () => OpenELMPreTrainedModel,
@@ -28820,6 +28751,21 @@ var OlmoHybridModel = class extends OlmoHybridPreTrainedModel {
 };
 var OlmoHybridForCausalLM = class extends OlmoHybridPreTrainedModel {
 };
+var OpenAIPrivacyFilterPreTrainedModel = class extends PreTrainedModel {
+};
+var OpenAIPrivacyFilterModel = class extends OpenAIPrivacyFilterPreTrainedModel {
+};
+var OpenAIPrivacyFilterForTokenClassification = class extends OpenAIPrivacyFilterPreTrainedModel {
+  /**
+   * Calls the model on new inputs.
+   *
+   * @param {Object} model_inputs The inputs to the model.
+   * @returns {Promise<SequenceClassifierOutput>} An object containing the model's output logits for sequence classification.
+   */
+  async _call(model_inputs) {
+    return new SequenceClassifierOutput(await super._call(model_inputs));
+  }
+};
 var OpenELMPreTrainedModel = class extends PreTrainedModel {
 };
 var OpenELMModel = class extends OpenELMPreTrainedModel {
@@ -29816,18 +29762,26 @@ function createEncoderState(model, input_features) {
   const { num_mel_bins, hidden_size: enc_hidden_size } = audio_config;
   const PADDING_CACHE_CHANNELS = num_mel_bins + enc_hidden_size;
   const enc_kv_cache = new DynamicCache();
-  const enc_dtype = encoder_session?.config?.kv_cache_dtype ?? "float32";
-  const enc_cls = enc_dtype === "float16" ? DataTypeMap.float16 : DataTypeMap.float32;
-  const enc_shapes = getCacheShapes(audio_config, { batch_size: 1 });
-  for (const name in enc_shapes) {
-    const size = enc_shapes[name].reduce((a, b) => a * b, 1);
-    enc_kv_cache[name] = new Tensor22(enc_dtype, new enc_cls(size), enc_shapes[name]);
+  const enc_names = getCacheNames(audio_config);
+  const enc_symbols = { batch_size: 1 };
+  let padding_type = "float32";
+  for (const meta of encoder_session.inputMetadata) {
+    if (meta.name === "past_padding_cache") {
+      padding_type = meta.type;
+      continue;
+    }
+    if (!enc_names.has(meta.name)) continue;
+    const shape = resolveCacheShape(meta.shape, enc_symbols);
+    const size = shape.reduce((a, b) => a * b, 1);
+    const cls = DataTypeMap[meta.type];
+    enc_kv_cache[meta.name] = new Tensor22(meta.type, new cls(size), shape);
   }
-  const enc_padding_cache = new Tensor22(enc_dtype, new enc_cls(PADDING_CACHE_CHANNELS * CONV1_LEFT_PAD), [
-    1,
-    PADDING_CACHE_CHANNELS,
-    CONV1_LEFT_PAD
-  ]);
+  const padding_cls = DataTypeMap[padding_type];
+  const enc_padding_cache = new Tensor22(
+    padding_type,
+    new padding_cls(PADDING_CACHE_CHANNELS * CONV1_LEFT_PAD),
+    [1, PADDING_CACHE_CHANNELS, CONV1_LEFT_PAD]
+  );
   const chunks_iter = input_features[Symbol.asyncIterator]?.() ?? input_features[Symbol.iterator]?.();
   if (!chunks_iter) {
     throw new Error("input_features must be iterable or async iterable");
@@ -30673,7 +30627,8 @@ var MODEL_MAPPING_NAMES_ENCODER_ONLY = /* @__PURE__ */ new Map([
   ["mobilenet_v4", "MobileNetV4Model"],
   ["maskformer", "MaskFormerModel"],
   ["mgp-str", "MgpstrForSceneTextRecognition"],
-  ["style_text_to_speech_2", "StyleTextToSpeech2Model"]
+  ["style_text_to_speech_2", "StyleTextToSpeech2Model"],
+  ["openai_privacy_filter", "OpenAIPrivacyFilterModel"]
 ]);
 var MODEL_MAPPING_NAMES_ENCODER_DECODER = /* @__PURE__ */ new Map([
   ["t5", "T5Model"],
@@ -30806,7 +30761,8 @@ var MODEL_FOR_TOKEN_CLASSIFICATION_MAPPING_NAMES = /* @__PURE__ */ new Map([
   ["distilbert", "DistilBertForTokenClassification"],
   ["roberta", "RobertaForTokenClassification"],
   ["xlm", "XLMForTokenClassification"],
-  ["xlm-roberta", "XLMRobertaForTokenClassification"]
+  ["xlm-roberta", "XLMRobertaForTokenClassification"],
+  ["openai_privacy_filter", "OpenAIPrivacyFilterForTokenClassification"]
 ]);
 var MODEL_FOR_SEQ_TO_SEQ_CAUSAL_LM_MAPPING_NAMES = /* @__PURE__ */ new Map([
   ["t5", "T5ForConditionalGeneration"],
@@ -31469,7 +31425,12 @@ Pipeline {
 };
 var TokenClassificationPipeline = class extends /** @type {new (options: TextPipelineConstructorArgs) => TokenClassificationPipelineType} */
 Pipeline {
-  async _call(texts, { ignore_labels = ["O"] } = {}) {
+  async _call(texts, { ignore_labels = ["O"], aggregation_strategy = "none" } = {}) {
+    if (aggregation_strategy !== "none" && aggregation_strategy !== "simple") {
+      throw new Error(
+        `Invalid aggregation_strategy: "${aggregation_strategy}". Must be one of "none" or "simple".`
+      );
+    }
     const isBatched = Array.isArray(texts);
     const model_inputs = this.tokenizer(isBatched ? texts : [texts], {
       padding: true,
@@ -31480,20 +31441,16 @@ Pipeline {
     const id2label = this.model.config.id2label;
     const toReturn = [];
     for (let i = 0; i < logits.dims[0]; ++i) {
-      const ids = model_inputs.input_ids[i];
+      const ids = model_inputs.input_ids[i].tolist();
       const batch = logits[i];
       const tokens = [];
       for (let j = 0; j < batch.dims[0]; ++j) {
         const tokenData = batch[j];
         const topScoreIndex = max(tokenData.data)[1];
         const entity = id2label ? id2label[topScoreIndex] : `LABEL_${topScoreIndex}`;
-        if (ignore_labels.includes(entity)) {
-          continue;
-        }
-        const word = this.tokenizer.decode([ids[j].item()], { skip_special_tokens: true });
-        if (word === "") {
-          continue;
-        }
+        if (ignore_labels.includes(entity)) continue;
+        const word = this.tokenizer.decode([ids[j]], { skip_special_tokens: true });
+        if (word === "") continue;
         const scores = softmax(tokenData.data);
         tokens.push({
           entity,
@@ -31501,15 +31458,45 @@ Pipeline {
           index: j,
           word
           // TODO: Add support for start and end
-          // start: null,
-          // end: null,
         });
       }
-      toReturn.push(tokens);
+      toReturn.push(aggregation_strategy === "simple" ? groupEntities(tokens, ids, this.tokenizer) : tokens);
     }
     return isBatched ? toReturn : toReturn[0];
   }
 };
+function getTag(entity) {
+  const p = entity[0];
+  return entity[1] === "-" && (p === "B" || p === "I" || p === "E" || p === "S") ? [p, entity.slice(2)] : ["I", entity];
+}
+function groupEntities(tokens, ids, tokenizer) {
+  const groups = [];
+  let openTag = null;
+  for (let i = 0; i < tokens.length; ++i) {
+    const [prefix, tag] = getTag(tokens[i].entity);
+    const extend = openTag === tag && prefix !== "B" && prefix !== "S";
+    if (extend) {
+      groups[groups.length - 1].end = i + 1;
+      if (prefix === "E") openTag = null;
+    } else {
+      groups.push({ tag, start: i, end: i + 1 });
+      openTag = prefix === "S" ? null : tag;
+    }
+  }
+  return groups.map(({ tag, start, end }) => {
+    let scoreSum = 0;
+    const groupIds = [];
+    for (let i = start; i < end; ++i) {
+      scoreSum += tokens[i].score;
+      groupIds.push(ids[tokens[i].index]);
+    }
+    return {
+      entity_group: tag,
+      score: scoreSum / (end - start),
+      word: tokenizer.decode(groupIds, { skip_special_tokens: true })
+    };
+  });
+}
 var QuestionAnsweringPipeline = class extends /** @type {new (options: TextPipelineConstructorArgs) => QuestionAnsweringPipelineType} */
 Pipeline {
   async _call(question, context, { top_k = 1 } = {}) {
@@ -31689,10 +31676,19 @@ Pipeline {
    * @param {Partial<TextGenerationConfig>} generate_kwargs
    */
   async _call(texts, generate_kwargs = {}) {
+    const {
+      add_special_tokens: add_special_tokens_arg,
+      return_full_text: return_full_text_arg,
+      tools,
+      documents,
+      chat_template,
+      tokenizer_encode_kwargs,
+      ...generation_kwargs
+    } = generate_kwargs;
     let isBatched = false;
     let isChatInput = false;
-    let add_special_tokens = generate_kwargs.add_special_tokens ?? (this.tokenizer.add_bos_token || this.tokenizer.add_eos_token) ?? false;
-    let tokenizer_kwargs = generate_kwargs.tokenizer_encode_kwargs;
+    let add_special_tokens = add_special_tokens_arg ?? (this.tokenizer.add_bos_token || this.tokenizer.add_eos_token) ?? false;
+    let tokenizer_kwargs = tokenizer_encode_kwargs;
     let inputs;
     if (typeof texts === "string") {
       inputs = texts = [texts];
@@ -31712,23 +31708,25 @@ Pipeline {
         throw new Error("Input must be a string, an array of strings, a Chat, or an array of Chats");
       }
       isChatInput = true;
+      const chat_template_kwargs = {
+        tokenize: false,
+        add_generation_prompt: true,
+        ...pick({ tools, documents, chat_template }, ["tools", "documents", "chat_template"]),
+        ...tokenizer_kwargs
+      };
       inputs = /** @type {string[]} */
       /** @type {Chat[]} */
       texts.map(
         (x) => (
           /** @type {string} */
           /** @type {unknown} */
-          this.tokenizer.apply_chat_template(x, {
-            tokenize: false,
-            add_generation_prompt: true,
-            ...tokenizer_kwargs
-          })
+          this.tokenizer.apply_chat_template(x, chat_template_kwargs)
         )
       );
       add_special_tokens = false;
       tokenizer_kwargs = void 0;
     }
-    const return_full_text = isChatInput ? false : generate_kwargs.return_full_text ?? true;
+    const return_full_text = isChatInput ? false : return_full_text_arg ?? true;
     this.tokenizer.padding_side = "left";
     const text_inputs = this.tokenizer(inputs, {
       add_special_tokens,
@@ -31741,7 +31739,7 @@ Pipeline {
       await this.model.generate({
         ...text_inputs,
         ...this._default_generation_config,
-        ...generate_kwargs
+        ...generation_kwargs
       })
     );
     const decoded = this.tokenizer.batch_decode(outputTokenIds, {
@@ -32996,7 +32994,7 @@ async function pipeline2(task, model = null, {
 var stdout_write = apis.IS_PROCESS_AVAILABLE ? (x) => process.stdout.write(x) : (x) => console.log(x);
 var CONCRETE_DTYPES = Object.keys(DEFAULT_DTYPE_SUFFIX_MAPPING);
 
-// node_modules/@browser-quality-scorer/core/dist/index.js
+// ../../node_modules/.bun/@browser-quality-scorer+core@github+omarmir+quality-meter+05de4ab+6e1dd9d44b03143e/node_modules/@browser-quality-scorer/core/dist/index.js
 var MODEL_TOKEN_LIMIT = 512;
 var ESTIMATED_CHARS_PER_TOKEN = 4;
 var HYPOTHESIS_TEMPLATE = "{}";
@@ -35425,7 +35423,7 @@ if (typeof self !== "undefined") {
 
 onnxruntime-web/dist/ort.webgpu.bundle.min.mjs:
   (*!
-   * ONNX Runtime Web v1.26.0-dev.20260410-5e55544225
+   * ONNX Runtime Web v1.26.0-dev.20260416-b7804b056c
    * Copyright (c) Microsoft Corporation. All rights reserved.
    * Licensed under the MIT License.
    *)

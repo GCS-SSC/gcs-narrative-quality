@@ -1,5 +1,6 @@
 import { readFile } from 'node:fs/promises'
-import { join } from 'node:path'
+import { dirname, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import extensionDefinition from '../../extension.config'
 import {
@@ -29,6 +30,8 @@ const assessmentCatalog = [{
     }
   }]
 }]
+
+const extensionRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
 
 describe('gcs narrative quality extension', () => {
   it('declares stream configuration, runtime slots, static assets, and extension-owned server handlers', () => {
@@ -237,8 +240,8 @@ describe('gcs narrative quality extension', () => {
   })
 
   it('rewrites old plugin asset URLs to extension public asset URLs', async () => {
-    const workerSource = await readFile(join(process.cwd(), 'extensions/gcs-narrative-quality/client/worker-source.js'), 'utf8')
-    const bundledWorker = await readFile(join(process.cwd(), 'extensions/gcs-narrative-quality/client/worker.js'), 'utf8')
+    const workerSource = await readFile(resolve(extensionRoot, 'client/worker-source.js'), 'utf8')
+    const bundledWorker = await readFile(resolve(extensionRoot, 'client/worker.js'), 'utf8')
 
     expect(workerSource).not.toContain('/api/plugn/assets/quality-meter')
     expect(bundledWorker).not.toContain('/api/plugn/assets/quality-meter')
@@ -247,9 +250,9 @@ describe('gcs narrative quality extension', () => {
   })
 
   it('renders assessment and question selections alongside the original accordion controls', async () => {
-    const componentSource = await readFile(join(process.cwd(), 'extensions/gcs-narrative-quality/components/NarrativeQualityConfig.vue'), 'utf8')
-    const rendererSource = await readFile(join(process.cwd(), 'extensions/gcs-narrative-quality/components/NarrativeQualityConfigRenderer.vue'), 'utf8')
-    const helperSource = await readFile(join(process.cwd(), 'extensions/gcs-narrative-quality/components/narrative-quality.ts'), 'utf8')
+    const componentSource = await readFile(resolve(extensionRoot, 'components/NarrativeQualityConfig.vue'), 'utf8')
+    const rendererSource = await readFile(resolve(extensionRoot, 'components/NarrativeQualityConfigRenderer.vue'), 'utf8')
+    const helperSource = await readFile(resolve(extensionRoot, 'components/narrative-quality.ts'), 'utf8')
 
     expect(componentSource).toContain('/api/extensions/gcs-narrative-quality/streams/${streamId}/assessment-targets')
     expect(componentSource).toContain('assessment: { en: \'Assessment\'')

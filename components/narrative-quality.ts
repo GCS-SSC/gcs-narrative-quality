@@ -1,5 +1,5 @@
 /* eslint-disable jsdoc/require-jsdoc */
-import type { JsonValue } from '~~/shared/types/database'
+import type { JsonValue } from '@gcs-ssc/extensions'
 
 export type NarrativeQualityLocale = 'en' | 'fr'
 export type NarrativeQualityTone = 'error' | 'warning' | 'success'

@@ -8,7 +8,8 @@ type RouteResponse = {
   items?: unknown[]
 }
 
-vi.mock('~~/server/utils/extensions', () => ({
+vi.mock('@gcs-ssc/extensions/server', async importOriginal => ({
+  ...await importOriginal<typeof import('@gcs-ssc/extensions/server')>(),
   resolveExtensionStreamContext: (...args: unknown[]) => resolveExtensionStreamContextMock(...args)
 }))
 

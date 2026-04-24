@@ -42,17 +42,27 @@ Install dependencies with Bun:
 bun install
 ```
 
+Run the standalone extension checks:
+
+```bash
+bun run typecheck
+bun run test:unit
+bun run check:language-server
+```
+
 Rebuild the browser worker bundle after changing `client/worker-source.js`, `client/worker-request-queue.js`, `client/core.ts`, or runtime code imported by the worker:
 
 ```bash
 bun run build:worker
 ```
 
-In the GCS-SSC host workspace, run the extension checks with:
+The package depends on the public GCS-SSC extension SDK:
 
-```bash
-bun x vitest run extensions/gcs-narrative-quality/tests/unit
+```json
+"@gcs-ssc/extensions": "github:GCS-SSC/gcs-ssc-extensions#main"
 ```
+
+Do not import host internals such as `~~/shared`, `~~/server`, or `~/` from this repository. Add missing host-facing contracts to `@gcs-ssc/extensions` first so standalone editor IntelliSense and typechecking continue to work.
 
 ## Host Integration
 

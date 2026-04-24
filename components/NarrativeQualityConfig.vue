@@ -2,7 +2,7 @@
 /* eslint-disable jsdoc/require-jsdoc */
 import { computed, ref, watch } from 'vue'
 import type { Ref } from 'vue'
-import type { JsonValue } from '~~/shared/types/database'
+import type { JsonValue } from '@gcs-ssc/extensions'
 import type { NarrativeQualityPluginUiNode } from './narrative-quality-plugin-ui'
 import configSchemaJson from '../ui/config.json'
 import NarrativeQualityConfigRenderer from './NarrativeQualityConfigRenderer.vue'

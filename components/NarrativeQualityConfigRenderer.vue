@@ -255,7 +255,7 @@ watch(collectionItems, rows => {
       <UTextarea
         :model-value="String(fieldValue ?? '')"
         :rows="schema.rows ?? 4"
-        @update:model-value="value => updateField(String(value ?? ''))" />
+        @update:model-value="(value: string | number) => updateField(String(value ?? ''))" />
       <p
         v-if="schema.description"
         class="text-sm text-zinc-500 dark:text-zinc-400">
@@ -268,7 +268,7 @@ watch(collectionItems, rows => {
     <div class="space-y-2">
       <UInput
         :model-value="String(fieldValue ?? '')"
-        @update:model-value="value => updateField(String(value ?? ''))" />
+        @update:model-value="(value: string | number) => updateField(String(value ?? ''))" />
       <p
         v-if="schema.description"
         class="text-sm text-zinc-500 dark:text-zinc-400">
@@ -285,7 +285,7 @@ watch(collectionItems, rows => {
         :min="schema.min"
         :max="schema.max"
         :step="schema.step ?? 1"
-        @update:model-value="value => {
+        @update:model-value="(value: string | number) => {
           const nextValue = typeof value === 'number' ? value : Number(value ?? 0)
           updateField(Number.isFinite(nextValue) ? nextValue : 0)
         }" />
@@ -304,7 +304,7 @@ watch(collectionItems, rows => {
         :items="(schema.options ?? []).map(option => ({ value: option.value, label: getText(option.label) }))"
         value-key="value"
         label-key="label"
-        @update:model-value="value => updateField(String(value ?? ''))" />
+        @update:model-value="(value: string | number) => updateField(String(value ?? ''))" />
       <p
         v-if="schema.description"
         class="text-sm text-zinc-500 dark:text-zinc-400">
@@ -317,7 +317,7 @@ watch(collectionItems, rows => {
     <div class="space-y-2">
       <USwitch
         :model-value="Boolean(fieldValue)"
-        @update:model-value="value => updateField(Boolean(value))" />
+        @update:model-value="(value: boolean) => updateField(Boolean(value))" />
       <p
         v-if="schema.description"
         class="text-sm text-zinc-500 dark:text-zinc-400">

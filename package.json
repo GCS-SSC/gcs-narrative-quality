@@ -3,16 +3,27 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build:worker": "bun x esbuild client/worker-source.js --bundle --format=esm --platform=browser --target=es2022 --outfile=client/worker.js"
+    "build:worker": "bun x esbuild client/worker-source.js --bundle --format=esm --platform=browser --target=es2022 --outfile=client/worker.js",
+    "check:language-server": "node scripts/check-vue-language-server.mjs",
+    "test:unit": "vitest run --config vitest.config.ts",
+    "typecheck": "vue-tsc --noEmit"
   },
   "dependencies": {
     "@browser-quality-scorer/core": "github:omarmir/quality-meter#pkg-v1.0.2",
+    "@gcs-ssc/extensions": "github:GCS-SSC/gcs-ssc-extensions#main",
     "@huggingface/transformers": "^4.1.0"
   },
   "devDependencies": {
+    "@types/node": "^24.10.2",
+    "@vitejs/plugin-vue": "^6.0.4",
+    "@vue/language-server": "^3.2.7",
+    "@vue/test-utils": "^2.4.6",
     "esbuild": "0.28.0",
+    "jsdom": "^28.1.0",
     "typescript": "^5.9.3",
-    "vue": "^3.5.28"
+    "vitest": "^4.0.18",
+    "vue": "^3.5.28",
+    "vue-tsc": "^3.2.4"
   },
   "peerDependencies": {
     "vue": "^3.5.28",

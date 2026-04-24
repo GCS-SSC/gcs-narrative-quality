@@ -4,7 +4,10 @@ import {
   getReviewSchemaEffectiveContent,
   resolveExtensionStreamContext
 } from '@gcs-ssc/extensions/server'
-import type { ReviewSchemaContentSource } from '@gcs-ssc/extensions/server'
+import type {
+  ExtensionStreamContextQueryBuilder,
+  ReviewSchemaContentSource
+} from '@gcs-ssc/extensions/server'
 
 interface AssessmentSetRow {
   id: unknown
@@ -15,6 +18,19 @@ interface AssessmentSchemaRow extends ReviewSchemaContentSource {
   egcs_cn_name_en: string
   egcs_cn_name_fr: string
   egcs_cn_version: unknown
+}
+
+interface AssessmentQueryBuilder {
+  innerJoin: (...args: unknown[]) => AssessmentQueryBuilder
+  select: (...args: unknown[]) => AssessmentQueryBuilder
+  where: (...args: unknown[]) => AssessmentQueryBuilder
+  orderBy: (...args: unknown[]) => AssessmentQueryBuilder
+  execute: () => Promise<unknown[]>
+}
+
+interface AssessmentTargetRouteDatabase {
+  selectFrom(table: 'Transfer_Payment_Stream'): ExtensionStreamContextQueryBuilder
+  selectFrom(table: 'Common_Review_Set_Setup' | 'Common_Review_Setup'): AssessmentQueryBuilder
 }
 
 const buildQuestionKey = (sectionName: string, subSectionName: string, questionName: string) =>
@@ -49,7 +65,7 @@ const createExtensionRouteErrorResponse = (
 }
 
 export default async (event: Parameters<EventHandler>[0]) => {
-  const db = event.context.$db
+  const db = event.context.$db as AssessmentTargetRouteDatabase
   const streamId = typeof event.context.params?.streamId === 'string'
     ? event.context.params.streamId
     : undefined

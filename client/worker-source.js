@@ -12,9 +12,14 @@ import {
   resolveQualityMeterInput,
   resolveQualityMeterLocale
 } from './runtime.js'
+import {
+  createWorkerScoreCacheKey,
+  isWorkerScoreRequestSupersededError,
+  queueWorkerScoreRequest
+} from './worker-request-queue.js'
 
-const MODEL_BASE_PATH = resolveQualityMeterAssetUrl('/api/plugn/assets/quality-meter/models/')
-const WASM_BASE_PATH = resolveQualityMeterAssetUrl('/api/plugn/assets/quality-meter/client/')
+const MODEL_BASE_PATH = resolveQualityMeterAssetUrl('/extensions/gcs-narrative-quality/models/')
+const WASM_BASE_PATH = resolveQualityMeterAssetUrl('/extensions/gcs-narrative-quality/client/')
 const MODEL_BASE_URL = new URL(MODEL_BASE_PATH)
 const MODEL_REMOTE_HOST = MODEL_BASE_URL.origin
 const MODEL_REMOTE_PATH_TEMPLATE = `${MODEL_BASE_URL.pathname}{model}/`
@@ -110,6 +115,7 @@ const getScorer = async () => {
 const scorePayload = async (payload, requestId) => {
   const text = String(payload.text ?? '').trim()
   const locale = resolveQualityMeterLocale(String(payload.locale ?? 'en'))
+  const groupKey = typeof payload.groupKey === 'string' ? payload.groupKey : ''
   const settings = typeof payload.settings === 'object' && payload.settings !== null
     ? payload.settings
     : {}
@@ -119,78 +125,96 @@ const scorePayload = async (payload, requestId) => {
     return {}
   }
 
-  self.postMessage({
-    kind: 'status',
-    phase: 'scoring',
-    requestId,
-    result: createQualityMeterPendingResult()
-  })
-
-  const scorer = await getScorer()
-  const input = {
+  const cacheKey = createWorkerScoreCacheKey({
+    text,
+    locale,
     question,
-    response: text,
     criteria,
-    config: requestConfig
-  }
-
-  const fastResult = await scorer.score(input, { mode: 'fast' })
-  const refinement = decideQualityRefinement({
-    fastResult,
-    question,
-    response: text,
-    criteria,
-    requestConfig,
-    policy: 'adaptive',
-    config: DEFAULT_ADAPTIVE_REFINEMENT_CONFIG
+    requestConfig
   })
 
-  if (!refinement || !refinement.shouldRunFullPass) {
-    return createQualityMeterRuntimeResult(fastResult, 'fast', refinement)
-  }
+  return await queueWorkerScoreRequest(cacheKey, async () => {
+    self.postMessage({
+      kind: 'status',
+      phase: 'scoring',
+      requestId,
+      result: createQualityMeterPendingResult()
+    })
 
-  const refiningStartedAt = Date.now()
-  self.postMessage({
-    kind: 'status',
-    phase: 'refining',
-    requestId,
-    result: createQualityMeterRefiningResult(fastResult, refinement)
+    const scorer = await getScorer()
+    const input = {
+      question,
+      response: text,
+      criteria,
+      config: requestConfig
+    }
+
+    const fastResult = await scorer.score(input, { mode: 'fast' })
+    const refinement = decideQualityRefinement({
+      fastResult,
+      question,
+      response: text,
+      criteria,
+      requestConfig,
+      policy: 'adaptive',
+      config: DEFAULT_ADAPTIVE_REFINEMENT_CONFIG
+    })
+
+    if (!refinement || !refinement.shouldRunFullPass) {
+      return createQualityMeterRuntimeResult(fastResult, 'fast', refinement)
+    }
+
+    const refiningStartedAt = Date.now()
+    self.postMessage({
+      kind: 'status',
+      phase: 'refining',
+      requestId,
+      result: createQualityMeterRefiningResult(fastResult, refinement)
+    })
+
+    const fullResult = await scorer.score(input, { mode: 'full' })
+    const refiningElapsedMs = Date.now() - refiningStartedAt
+
+    if (refiningElapsedMs < MIN_REFINING_DISPLAY_MS) {
+      await sleep(MIN_REFINING_DISPLAY_MS - refiningElapsedMs)
+    }
+
+    return createQualityMeterRuntimeResult(fullResult, 'full', refinement)
+  }, {
+    groupKey
   })
-
-  const fullResult = await scorer.score(input, { mode: 'full' })
-  const refiningElapsedMs = Date.now() - refiningStartedAt
-
-  if (refiningElapsedMs < MIN_REFINING_DISPLAY_MS) {
-    await sleep(MIN_REFINING_DISPLAY_MS - refiningElapsedMs)
-  }
-
-  return createQualityMeterRuntimeResult(fullResult, 'full', refinement)
 }
 
-self.addEventListener('message', event => {
-  if (event.data?.type !== 'score') {
-    return
-  }
+if (typeof self !== 'undefined') {
+  self.addEventListener('message', event => {
+    if (event.data?.type !== 'score') {
+      return
+    }
 
-  const requestId = typeof event.data?.requestId === 'number'
-    ? event.data.requestId
-    : 0
+    const requestId = typeof event.data?.requestId === 'number'
+      ? event.data.requestId
+      : 0
 
-  void scorePayload(event.data.payload ?? {}, requestId).then(result => {
-    self.postMessage({
-      kind: 'result',
-      phase: 'complete',
-      requestId,
-      ok: true,
-      result
-    })
-  }).catch(error => {
-    self.postMessage({
-      kind: 'error',
-      phase: 'error',
-      requestId,
-      ok: false,
-      error: error instanceof Error ? error.message : 'QUALITY_METER_WORKER_ERROR'
+    void scorePayload(event.data.payload ?? {}, requestId).then(result => {
+      self.postMessage({
+        kind: 'result',
+        phase: 'complete',
+        requestId,
+        ok: true,
+        result
+      })
+    }).catch(error => {
+      if (isWorkerScoreRequestSupersededError(error)) {
+        return
+      }
+
+      self.postMessage({
+        kind: 'error',
+        phase: 'error',
+        requestId,
+        ok: false,
+        error: error instanceof Error ? error.message : 'QUALITY_METER_WORKER_ERROR'
+      })
     })
   })
-})
+}

@@ -53,6 +53,10 @@ export const resolveQualityMeterAssetUrl = relativePath => {
     : ''
 
   if (hostOrigin.length === 0) {
+    if (typeof globalThis.location?.origin === 'string' && globalThis.location.origin.length > 0) {
+      return new URL(relativePath, globalThis.location.origin).toString()
+    }
+
     return relativePath
   }
 

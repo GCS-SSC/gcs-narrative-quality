@@ -34998,6 +34998,9 @@ var QUALITY_METER_TASK_TYPES = /* @__PURE__ */ new Set([
 var resolveQualityMeterAssetUrl = (relativePath) => {
   const hostOrigin = typeof globalThis.__GCS_PLUGIN_HOST_ORIGIN__ === "string" ? globalThis.__GCS_PLUGIN_HOST_ORIGIN__ : "";
   if (hostOrigin.length === 0) {
+    if (typeof globalThis.location?.origin === "string" && globalThis.location.origin.length > 0) {
+      return new URL(relativePath, globalThis.location.origin).toString();
+    }
     return relativePath;
   }
   return `${hostOrigin}${relativePath}`;
@@ -35174,9 +35177,111 @@ var createQualityMeterRefiningResult = (result, refinement) => {
   };
 };
 
+// client/worker-request-queue.js
+var WorkerScoreRequestSupersededError = class extends Error {
+  /**
+   * Creates a superseded request error.
+   */
+  constructor() {
+    super("WORKER_SCORE_REQUEST_SUPERSEDED");
+    this.name = "WorkerScoreRequestSupersededError";
+  }
+};
+var isScoreExecuting = false;
+var pendingScoreQueue = [];
+var pendingScoreByGroup = /* @__PURE__ */ new Map();
+var scoreResultCache = /* @__PURE__ */ new Map();
+var scoreInFlightByCacheKey = /* @__PURE__ */ new Map();
+var createWorkerScoreCacheKey = ({
+  text,
+  locale,
+  question,
+  criteria,
+  requestConfig
+}) => JSON.stringify({
+  text,
+  locale,
+  question,
+  criteria,
+  requestConfig
+});
+var isWorkerScoreRequestSupersededError = (error) => error instanceof WorkerScoreRequestSupersededError;
+var runNextScoreRequest = () => {
+  if (isScoreExecuting) {
+    return;
+  }
+  const next = pendingScoreQueue.shift();
+  if (!next) {
+    return;
+  }
+  if (next.groupKey && pendingScoreByGroup.get(next.groupKey) === next) {
+    pendingScoreByGroup.delete(next.groupKey);
+  }
+  isScoreExecuting = true;
+  void Promise.resolve().then(async () => await next.run()).then((result) => {
+    next.resolve(result);
+  }).catch((error) => {
+    next.reject(error);
+  }).finally(() => {
+    isScoreExecuting = false;
+    runNextScoreRequest();
+  });
+};
+var queueWorkerScoreRequest = (cacheKey, run, options = {}) => {
+  const cached = scoreResultCache.get(cacheKey);
+  if (cached) {
+    return cached;
+  }
+  const existing = scoreInFlightByCacheKey.get(cacheKey);
+  if (existing) {
+    return existing;
+  }
+  let resolveTask;
+  let rejectTask;
+  const task = new Promise((resolve, reject) => {
+    resolveTask = resolve;
+    rejectTask = reject;
+  });
+  const groupKey = typeof options.groupKey === "string" && options.groupKey.length > 0 ? options.groupKey : "";
+  const queueItem = {
+    cacheKey,
+    groupKey,
+    run,
+    resolve: resolveTask,
+    reject: rejectTask
+  };
+  if (groupKey) {
+    const previous = pendingScoreByGroup.get(groupKey);
+    if (previous) {
+      const previousIndex = pendingScoreQueue.indexOf(previous);
+      if (previousIndex >= 0) {
+        pendingScoreQueue.splice(previousIndex, 1);
+      }
+      scoreResultCache.delete(previous.cacheKey);
+      scoreInFlightByCacheKey.delete(previous.cacheKey);
+      previous.reject(new WorkerScoreRequestSupersededError());
+    }
+    pendingScoreByGroup.set(groupKey, queueItem);
+  }
+  pendingScoreQueue.push(queueItem);
+  scoreResultCache.set(cacheKey, task);
+  scoreInFlightByCacheKey.set(cacheKey, task);
+  task.catch(() => {
+    if (scoreResultCache.get(cacheKey) === task) {
+      scoreResultCache.delete(cacheKey);
+    }
+  }).finally(() => {
+    if (scoreInFlightByCacheKey.get(cacheKey) === task) {
+      scoreInFlightByCacheKey.delete(cacheKey);
+    }
+  });
+  runNextScoreRequest();
+  return task;
+};
+
 // client/worker-source.js
-var MODEL_BASE_PATH = resolveQualityMeterAssetUrl("/api/plugn/assets/quality-meter/models/");
-var WASM_BASE_PATH = resolveQualityMeterAssetUrl("/api/plugn/assets/quality-meter/client/");
+var MODEL_BASE_PATH = resolveQualityMeterAssetUrl("/extensions/gcs-narrative-quality/models/");
+var WASM_BASE_PATH = resolveQualityMeterAssetUrl("/extensions/gcs-narrative-quality/client/");
 var MODEL_BASE_URL = new URL(MODEL_BASE_PATH);
 var MODEL_REMOTE_HOST = MODEL_BASE_URL.origin;
 var MODEL_REMOTE_PATH_TEMPLATE = `${MODEL_BASE_URL.pathname}{model}/`;
@@ -35231,74 +35336,91 @@ var getScorer = async () => {
 var scorePayload = async (payload, requestId) => {
   const text = String(payload.text ?? "").trim();
   const locale = resolveQualityMeterLocale(String(payload.locale ?? "en"));
+  const groupKey = typeof payload.groupKey === "string" ? payload.groupKey : "";
   const settings = typeof payload.settings === "object" && payload.settings !== null ? payload.settings : {};
   const { question, criteria, requestConfig } = resolveQualityMeterInput(settings, locale);
   if (!text || !question || criteria.length === 0) {
     return {};
   }
-  self.postMessage({
-    kind: "status",
-    phase: "scoring",
-    requestId,
-    result: createQualityMeterPendingResult()
-  });
-  const scorer = await getScorer();
-  const input = {
+  const cacheKey = createWorkerScoreCacheKey({
+    text,
+    locale,
     question,
-    response: text,
     criteria,
-    config: requestConfig
-  };
-  const fastResult = await scorer.score(input, { mode: "fast" });
-  const refinement = decideQualityRefinement({
-    fastResult,
-    question,
-    response: text,
-    criteria,
-    requestConfig,
-    policy: "adaptive",
-    config: DEFAULT_ADAPTIVE_REFINEMENT_CONFIG
+    requestConfig
   });
-  if (!refinement || !refinement.shouldRunFullPass) {
-    return createQualityMeterRuntimeResult(fastResult, "fast", refinement);
-  }
-  const refiningStartedAt = Date.now();
-  self.postMessage({
-    kind: "status",
-    phase: "refining",
-    requestId,
-    result: createQualityMeterRefiningResult(fastResult, refinement)
+  return await queueWorkerScoreRequest(cacheKey, async () => {
+    self.postMessage({
+      kind: "status",
+      phase: "scoring",
+      requestId,
+      result: createQualityMeterPendingResult()
+    });
+    const scorer = await getScorer();
+    const input = {
+      question,
+      response: text,
+      criteria,
+      config: requestConfig
+    };
+    const fastResult = await scorer.score(input, { mode: "fast" });
+    const refinement = decideQualityRefinement({
+      fastResult,
+      question,
+      response: text,
+      criteria,
+      requestConfig,
+      policy: "adaptive",
+      config: DEFAULT_ADAPTIVE_REFINEMENT_CONFIG
+    });
+    if (!refinement || !refinement.shouldRunFullPass) {
+      return createQualityMeterRuntimeResult(fastResult, "fast", refinement);
+    }
+    const refiningStartedAt = Date.now();
+    self.postMessage({
+      kind: "status",
+      phase: "refining",
+      requestId,
+      result: createQualityMeterRefiningResult(fastResult, refinement)
+    });
+    const fullResult = await scorer.score(input, { mode: "full" });
+    const refiningElapsedMs = Date.now() - refiningStartedAt;
+    if (refiningElapsedMs < MIN_REFINING_DISPLAY_MS) {
+      await sleep(MIN_REFINING_DISPLAY_MS - refiningElapsedMs);
+    }
+    return createQualityMeterRuntimeResult(fullResult, "full", refinement);
+  }, {
+    groupKey
   });
-  const fullResult = await scorer.score(input, { mode: "full" });
-  const refiningElapsedMs = Date.now() - refiningStartedAt;
-  if (refiningElapsedMs < MIN_REFINING_DISPLAY_MS) {
-    await sleep(MIN_REFINING_DISPLAY_MS - refiningElapsedMs);
-  }
-  return createQualityMeterRuntimeResult(fullResult, "full", refinement);
 };
-self.addEventListener("message", (event) => {
-  if (event.data?.type !== "score") {
-    return;
-  }
-  const requestId = typeof event.data?.requestId === "number" ? event.data.requestId : 0;
-  void scorePayload(event.data.payload ?? {}, requestId).then((result) => {
-    self.postMessage({
-      kind: "result",
-      phase: "complete",
-      requestId,
-      ok: true,
-      result
-    });
-  }).catch((error) => {
-    self.postMessage({
-      kind: "error",
-      phase: "error",
-      requestId,
-      ok: false,
-      error: error instanceof Error ? error.message : "QUALITY_METER_WORKER_ERROR"
+if (typeof self !== "undefined") {
+  self.addEventListener("message", (event) => {
+    if (event.data?.type !== "score") {
+      return;
+    }
+    const requestId = typeof event.data?.requestId === "number" ? event.data.requestId : 0;
+    void scorePayload(event.data.payload ?? {}, requestId).then((result) => {
+      self.postMessage({
+        kind: "result",
+        phase: "complete",
+        requestId,
+        ok: true,
+        result
+      });
+    }).catch((error) => {
+      if (isWorkerScoreRequestSupersededError(error)) {
+        return;
+      }
+      self.postMessage({
+        kind: "error",
+        phase: "error",
+        requestId,
+        ok: false,
+        error: error instanceof Error ? error.message : "QUALITY_METER_WORKER_ERROR"
+      });
     });
   });
-});
+}
 /*! Bundled license information:
 
 onnxruntime-web/dist/ort.webgpu.bundle.min.mjs:

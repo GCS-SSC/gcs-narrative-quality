@@ -1,2 +1,7 @@
 node_modules/
-models/
+coverage/
+dist/
+.nuxt/
+.output/
+test-results/
+*.log

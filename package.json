@@ -11,7 +11,8 @@
   "dependencies": {
     "@browser-quality-scorer/core": "github:omarmir/quality-meter#pkg-v1.0.2",
     "@gcs-ssc/extensions": "github:GCS-SSC/gcs-ssc-extensions#main",
-    "@huggingface/transformers": "^4.1.0"
+    "@huggingface/transformers": "^4.1.0",
+    "nanoid": "^5.1.6"
   },
   "devDependencies": {
     "@types/node": "^24.10.2",

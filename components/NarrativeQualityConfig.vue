@@ -104,17 +104,28 @@ const localized = (value: Record<NarrativeQualityLocale, string>) => locale.valu
 
 const catalogItems = computed<NarrativeQualityAssessmentTarget[]>(() => catalogData.value?.items ?? [])
 
+const resolveSelectedAssessment = (
+  items: NarrativeQualityAssessmentTarget[],
+  selectedSchemaId: string
+) => items.find(item => item.schemaId === selectedSchemaId) ?? items[0]
+
+const resolveSelectedQuestionKey = (
+  assessment: NarrativeQualityAssessmentTarget | undefined,
+  selectedKey: string
+) => {
+  const questions = assessment?.questions ?? []
+  const selectedQuestion = questions.find(item => item.key === selectedKey) ?? questions[0]
+
+  return selectedQuestion?.key ?? ''
+}
+
 const syncSelectionState = (items: NarrativeQualityAssessmentTarget[]) => {
-  const firstAssessment = items[0]
-  const alignmentAssessment = items.find(item => item.schemaId === selectedAlignmentSchemaId.value) ?? firstAssessment
-  const commentAssessment = items.find(item => item.schemaId === selectedCommentSchemaId.value) ?? firstAssessment
+  const alignmentAssessment = resolveSelectedAssessment(items, selectedAlignmentSchemaId.value)
+  const commentAssessment = resolveSelectedAssessment(items, selectedCommentSchemaId.value)
 
   selectedAlignmentSchemaId.value = alignmentAssessment?.schemaId ?? ''
   selectedCommentSchemaId.value = commentAssessment?.schemaId ?? ''
-
-  const availableQuestions = commentAssessment?.questions ?? []
-  const selectedQuestion = availableQuestions.find(item => item.key === selectedQuestionKey.value) ?? availableQuestions[0]
-  selectedQuestionKey.value = selectedQuestion?.key ?? ''
+  selectedQuestionKey.value = resolveSelectedQuestionKey(commentAssessment, selectedQuestionKey.value)
 }
 
 watch(catalogItems, items => {

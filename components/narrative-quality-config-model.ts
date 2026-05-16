@@ -1,6 +1,8 @@
 /* eslint-disable jsdoc/require-jsdoc */
 import type { NarrativeQualityPluginUiNode } from './narrative-quality-plugin-ui'
 
+type DefaultValueFactory = (schema: NarrativeQualityPluginUiNode, skipSchemaKey: boolean) => unknown
+
 const getPathSegments = (path: string) => path.split('.').filter(segment => segment.trim().length > 0)
 
 const getModelValue = (model: Record<string, unknown>, path: string) =>
@@ -11,6 +13,9 @@ const getModelValue = (model: Record<string, unknown>, path: string) =>
 
     return (current as Record<string, unknown>)[segment]
   }, model)
+
+const isPlainRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value)
 
 export const setModelValue = (model: Record<string, unknown>, path: string, value: unknown) => {
   const segments = getPathSegments(path)
@@ -37,28 +42,84 @@ export const setModelValue = (model: Record<string, unknown>, path: string, valu
   current[finalSegment] = value
 }
 
+const shouldMergeRecordDefaults = (existingValue: unknown, nestedValue: unknown): existingValue is Record<string, unknown> =>
+  isPlainRecord(existingValue) && isPlainRecord(nestedValue)
+
+const assignNestedDefault = (
+  target: Record<string, unknown>,
+  key: string,
+  nestedValue: unknown
+) => {
+  const existingValue = target[key]
+  if (shouldMergeRecordDefaults(existingValue, nestedValue)) {
+    mergeNestedDefaults(existingValue, nestedValue)
+    return
+  }
+
+  target[key] = nestedValue
+}
+
 const mergeNestedDefaults = (target: Record<string, unknown>, value: unknown) => {
-  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+  if (!isPlainRecord(value)) {
     return
   }
 
   for (const [key, nestedValue] of Object.entries(value)) {
-    const existingValue = target[key]
+    assignNestedDefault(target, key, nestedValue)
+  }
+}
 
-    if (
-      typeof existingValue === 'object'
-      && existingValue !== null
-      && !Array.isArray(existingValue)
-      && typeof nestedValue === 'object'
-      && nestedValue !== null
-      && !Array.isArray(nestedValue)
-    ) {
-      mergeNestedDefaults(existingValue as Record<string, unknown>, nestedValue)
-      continue
+const createStringDefaultValue = (schema: NarrativeQualityPluginUiNode) =>
+  typeof schema.default_value === 'string' ? schema.default_value : ''
+
+const createNumberDefaultValue = (schema: NarrativeQualityPluginUiNode) =>
+  typeof schema.default_value === 'number' ? schema.default_value : 0
+
+const createSwitchDefaultValue = (schema: NarrativeQualityPluginUiNode) =>
+  typeof schema.default_value === 'boolean' ? schema.default_value : false
+
+const createCollectionDefaultValue = () => []
+
+const createLiteralDefaultValue = (schema: NarrativeQualityPluginUiNode) =>
+  schema.default_value === undefined ? null : schema.default_value
+
+const createChildDefaults = (children: NarrativeQualityPluginUiNode[] = []): Record<string, unknown> =>
+  children.reduce<Record<string, unknown>>((acc, child) => {
+    const childDefault = createDefaultValue(child, true)
+    if (!child.key) {
+      mergeNestedDefaults(acc, childDefault)
+      return acc
     }
 
-    target[key] = nestedValue
+    setModelValue(acc, child.key, childDefault)
+    return acc
+  }, {})
+
+const createContainerDefaultValue = (
+  schema: NarrativeQualityPluginUiNode,
+  skipSchemaKey: boolean
+): Record<string, unknown> => {
+  const nestedDefaults = createChildDefaults(schema.children)
+  if (schema.key && !skipSchemaKey) {
+    const wrappedDefaults: Record<string, unknown> = {}
+    setModelValue(wrappedDefaults, schema.key, nestedDefaults)
+    return wrappedDefaults
   }
+
+  return nestedDefaults
+}
+
+const defaultValueFactories: Partial<Record<NarrativeQualityPluginUiNode['type'], DefaultValueFactory>> = {
+  input: createStringDefaultValue,
+  textarea: createStringDefaultValue,
+  select: createStringDefaultValue,
+  number: createNumberDefaultValue,
+  switch: createSwitchDefaultValue,
+  collection: createCollectionDefaultValue,
+  stack: createContainerDefaultValue,
+  group: createContainerDefaultValue,
+  section: createContainerDefaultValue,
+  accordion: createContainerDefaultValue
 }
 
 const createDefaultValue = (schema?: NarrativeQualityPluginUiNode, skipSchemaKey = false): unknown => {
@@ -66,81 +127,50 @@ const createDefaultValue = (schema?: NarrativeQualityPluginUiNode, skipSchemaKey
     return {}
   }
 
-  if (schema.type === 'input' || schema.type === 'textarea' || schema.type === 'select') {
-    return typeof schema.default_value === 'string' ? schema.default_value : ''
+  const factory = defaultValueFactories[schema.type]
+  if (factory) {
+    return factory(schema, skipSchemaKey)
   }
 
-  if (schema.type === 'number') {
-    return typeof schema.default_value === 'number' ? schema.default_value : 0
+  return createLiteralDefaultValue(schema)
+}
+
+const cloneValue = <T>(value: T): T => structuredClone(value)
+
+const mergeArrayValues = (defaults: unknown[], current: unknown): unknown[] =>
+  Array.isArray(current) ? cloneValue(current) : cloneValue(defaults)
+
+const mergeRecordValues = (
+  defaults: Record<string, unknown>,
+  current: Record<string, unknown>
+): Record<string, unknown> => {
+  const merged: Record<string, unknown> = cloneValue(defaults)
+
+  for (const [key, currentChildValue] of Object.entries(current)) {
+    merged[key] = mergeValues(merged[key], currentChildValue)
   }
 
-  if (schema.type === 'switch') {
-    return typeof schema.default_value === 'boolean' ? schema.default_value : false
+  return merged
+}
+
+const mergeValues = (defaults: unknown, current: unknown): unknown => {
+  if (current === undefined) {
+    return cloneValue(defaults)
   }
 
-  if (schema.type === 'collection') {
-    return []
+  if (Array.isArray(defaults)) {
+    return mergeArrayValues(defaults, current)
   }
 
-  if (
-    schema.type === 'stack'
-    || schema.type === 'group'
-    || schema.type === 'section'
-    || schema.type === 'accordion'
-  ) {
-    const nestedDefaults = (schema.children ?? []).reduce<Record<string, unknown>>((acc, child) => {
-      if (!child.key) {
-        mergeNestedDefaults(acc, createDefaultValue(child, true))
-        return acc
-      }
-
-      setModelValue(acc, child.key, createDefaultValue(child, true))
-      return acc
-    }, {})
-
-    if (schema.key && !skipSchemaKey) {
-      const wrappedDefaults: Record<string, unknown> = {}
-      setModelValue(wrappedDefaults, schema.key, nestedDefaults)
-      return wrappedDefaults
-    }
-
-    return nestedDefaults
+  if (isPlainRecord(defaults) && isPlainRecord(current)) {
+    return mergeRecordValues(defaults, current)
   }
 
-  return schema.default_value ?? null
+  return cloneValue(current)
 }
 
 export const mergePluginUiDefaults = (schema: NarrativeQualityPluginUiNode | undefined, currentValue?: unknown): unknown => {
   const defaultValue = createDefaultValue(schema)
-
-  const mergeValues = (defaults: unknown, current: unknown): unknown => {
-    if (current === undefined) {
-      return structuredClone(defaults)
-    }
-
-    if (Array.isArray(defaults)) {
-      return Array.isArray(current) ? structuredClone(current) : structuredClone(defaults)
-    }
-
-    if (
-      typeof defaults === 'object'
-      && defaults !== null
-      && typeof current === 'object'
-      && current !== null
-      && !Array.isArray(current)
-    ) {
-      const merged: Record<string, unknown> = structuredClone(defaults as Record<string, unknown>)
-
-      for (const [key, currentChildValue] of Object.entries(current as Record<string, unknown>)) {
-        merged[key] = mergeValues(merged[key], currentChildValue)
-      }
-
-      return merged
-    }
-
-    return structuredClone(current)
-  }
-
   return mergeValues(defaultValue, currentValue)
 }
 

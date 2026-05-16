@@ -499,125 +499,159 @@ const getQuestionLabel = (question: Record<string, unknown> | null, locale: Narr
 const asLocale = (value: unknown, fallback: NarrativeQualityLocale): NarrativeQualityLocale =>
   value === 'fr' ? 'fr' : value === 'en' ? 'en' : fallback
 
-export const resolveNarrativeQualityTargets = (
-  context: Record<string, unknown>,
-  activeLocale: string
+const resolveAgreementTextareaTarget = (
+  textareaLocale: NarrativeQualityLocale,
+  textareaLabel: string,
+  textareaText: string
 ): NarrativeQualityTarget[] => {
-  const locale: NarrativeQualityLocale = activeLocale === 'fr' ? 'fr' : 'en'
-  const textarea = isRecord(context.textarea) ? context.textarea : null
-
-  if (textarea) {
-    const textareaKind = readContextText(textarea.kind)
-    const textareaLocale = asLocale(textarea.locale, locale)
-    const textareaLabel = readContextText(textarea.label)
-    const textareaText = readContextText(textarea.text)
-
-    if (textareaKind === 'agreement.description') {
-      return textareaText.length > 0
-        ? [{
-            key: `agreement-description-${textareaLocale}`,
-            configKey: { kind: 'agreement_top_level' },
-            locale: textareaLocale,
-            label: textareaLabel || (textareaLocale === 'fr' ? 'Description française' : 'English description'),
-            text: textareaText
-          }]
-        : []
-    }
-
-    const assessmentSchemaId = readContextText(textarea.assessmentSchemaId)
-    if (textareaKind === 'assessment.reviewAlignment') {
-      return textareaText.length > 0 && assessmentSchemaId.length > 0
-        ? [{
-            key: `review-alignment-narrative-${assessmentSchemaId}`,
-            configKey: {
-              kind: 'assessment_review_alignment_narrative',
-              schemaId: assessmentSchemaId
-            },
-            locale: textareaLocale,
-            label: textareaLabel || (textareaLocale === 'fr' ? 'Narratif d’examen' : 'Review narrative'),
-            text: textareaText
-          }]
-        : []
-    }
-
-    if (textareaKind === 'assessment.questionComment') {
-      const sectionName = readContextText(textarea.sectionName)
-      const subSectionName = readContextText(textarea.subSectionName)
-      const questionName = readContextText(textarea.questionName)
-
-      if (
-        textareaText.length === 0
-        || assessmentSchemaId.length === 0
-        || sectionName.length === 0
-        || subSectionName.length === 0
-        || questionName.length === 0
-      ) {
-        return []
-      }
-
-      const questionKey = buildNarrativeQualityQuestionKey(sectionName, subSectionName, questionName)
-
-      return [{
-        key: `question-comment-${assessmentSchemaId}-${questionKey}`,
-        configKey: {
-          kind: 'assessment_question_comment',
-          schemaId: assessmentSchemaId,
-          questionKey
-        },
+  return textareaText.length > 0
+    ? [{
+        key: `agreement-description-${textareaLocale}`,
+        configKey: { kind: 'agreement_top_level' },
         locale: textareaLocale,
-        label: textareaLabel || (textareaLocale === 'fr' ? 'Commentaire' : 'Comment'),
+        label: textareaLabel || (textareaLocale === 'fr' ? 'Description française' : 'English description'),
         text: textareaText
       }]
+    : []
+}
+
+const resolveAssessmentReviewAlignmentTextareaTarget = (
+  textarea: Record<string, unknown>,
+  textareaLocale: NarrativeQualityLocale,
+  textareaLabel: string,
+  textareaText: string
+): NarrativeQualityTarget[] => {
+  const assessmentSchemaId = readContextText(textarea.assessmentSchemaId)
+
+  return textareaText.length > 0 && assessmentSchemaId.length > 0
+    ? [{
+        key: `review-alignment-narrative-${assessmentSchemaId}`,
+        configKey: {
+          kind: 'assessment_review_alignment_narrative',
+          schemaId: assessmentSchemaId
+        },
+        locale: textareaLocale,
+        label: textareaLabel || (textareaLocale === 'fr' ? 'Narratif d’examen' : 'Review narrative'),
+        text: textareaText
+      }]
+    : []
+}
+
+const resolveAssessmentQuestionCommentTextareaTarget = (
+  textarea: Record<string, unknown>,
+  textareaLocale: NarrativeQualityLocale,
+  textareaLabel: string,
+  textareaText: string
+): NarrativeQualityTarget[] => {
+  const assessmentSchemaId = readContextText(textarea.assessmentSchemaId)
+  const sectionName = readContextText(textarea.sectionName)
+  const subSectionName = readContextText(textarea.subSectionName)
+  const questionName = readContextText(textarea.questionName)
+
+  if (
+    textareaText.length === 0
+    || assessmentSchemaId.length === 0
+    || sectionName.length === 0
+    || subSectionName.length === 0
+    || questionName.length === 0
+  ) {
+    return []
+  }
+
+  const questionKey = buildNarrativeQualityQuestionKey(sectionName, subSectionName, questionName)
+
+  return [{
+    key: `question-comment-${assessmentSchemaId}-${questionKey}`,
+    configKey: {
+      kind: 'assessment_question_comment',
+      schemaId: assessmentSchemaId,
+      questionKey
+    },
+    locale: textareaLocale,
+    label: textareaLabel || (textareaLocale === 'fr' ? 'Commentaire' : 'Comment'),
+    text: textareaText
+  }]
+}
+
+const resolveTextareaNarrativeQualityTargets = (
+  textarea: Record<string, unknown>,
+  locale: NarrativeQualityLocale
+): NarrativeQualityTarget[] => {
+  const textareaKind = readContextText(textarea.kind)
+  const textareaLocale = asLocale(textarea.locale, locale)
+  const textareaLabel = readContextText(textarea.label)
+  const textareaText = readContextText(textarea.text)
+
+  if (textareaKind === 'agreement.description') {
+    return resolveAgreementTextareaTarget(textareaLocale, textareaLabel, textareaText)
+  }
+
+  if (textareaKind === 'assessment.reviewAlignment') {
+    return resolveAssessmentReviewAlignmentTextareaTarget(textarea, textareaLocale, textareaLabel, textareaText)
+  }
+
+  if (textareaKind === 'assessment.questionComment') {
+    return resolveAssessmentQuestionCommentTextareaTarget(textarea, textareaLocale, textareaLabel, textareaText)
+  }
+
+  return []
+}
+
+const resolveAgreementNarrativeQualityTargets = (
+  agreement: Record<string, unknown>
+): NarrativeQualityTarget[] => {
+  const targets: NarrativeQualityTarget[] = [
+    {
+      key: 'agreement-description-en',
+      configKey: { kind: 'agreement_top_level' },
+      locale: 'en',
+      label: 'English description',
+      text: readContextText(agreement.egcs_fc_description_en)
+    },
+    {
+      key: 'agreement-description-fr',
+      configKey: { kind: 'agreement_top_level' },
+      locale: 'fr',
+      label: 'Description française',
+      text: readContextText(agreement.egcs_fc_description_fr)
     }
-  }
+  ]
 
-  const agreement = isRecord(context.agreement) ? context.agreement : null
-  if (agreement) {
-    const targets: NarrativeQualityTarget[] = [
-      {
-        key: 'agreement-description-en',
-        configKey: { kind: 'agreement_top_level' },
-        locale: 'en',
-        label: 'English description',
-        text: readContextText(agreement.egcs_fc_description_en)
-      },
-      {
-        key: 'agreement-description-fr',
-        configKey: { kind: 'agreement_top_level' },
-        locale: 'fr',
-        label: 'Description française',
-        text: readContextText(agreement.egcs_fc_description_fr)
-      }
-    ]
+  return targets.filter(target => target.text.length > 0)
+}
 
-    return targets.filter(target => target.text.length > 0)
-  }
+const resolveAssessmentResponseNarrativeQualityTargets = (
+  assessmentSchemaId: string,
+  assessmentResponse: Record<string, unknown>,
+  locale: NarrativeQualityLocale
+): NarrativeQualityTarget[] => {
+  const text = readContextText(assessmentResponse.egcs_cn_reviewalignmentnarrative)
 
-  const assessment = isRecord(context.assessment) ? context.assessment : null
-  const assessmentResponse = isRecord(context.assessmentResponse) ? context.assessmentResponse : null
-  const assessmentSchemaId = readContextText(context.assessmentSchemaId) || readContextText(assessment?.egcs_cn_reviewschema)
+  return text.length > 0
+    ? [{
+        key: `review-alignment-narrative-${assessmentSchemaId}`,
+        configKey: {
+          kind: 'assessment_review_alignment_narrative',
+          schemaId: assessmentSchemaId
+        },
+        locale,
+        label: locale === 'fr' ? 'Narratif d’examen' : 'Review narrative',
+        text
+      }]
+    : []
+}
 
-  if (assessmentResponse && assessmentSchemaId.length > 0) {
-    const text = readContextText(assessmentResponse.egcs_cn_reviewalignmentnarrative)
-    return text.length > 0
-      ? [{
-          key: `review-alignment-narrative-${assessmentSchemaId}`,
-          configKey: {
-            kind: 'assessment_review_alignment_narrative',
-            schemaId: assessmentSchemaId
-          },
-          locale,
-          label: locale === 'fr' ? 'Narratif d’examen' : 'Review narrative',
-          text
-        }]
-      : []
-  }
-
+const resolveQuestionCommentNarrativeQualityTargets = (
+  context: Record<string, unknown>,
+  assessmentSchemaId: string,
+  locale: NarrativeQualityLocale
+): NarrativeQualityTarget[] => {
   const comment = readContextText(context.comment)
   const question = isRecord(context.question) ? context.question : null
   const sectionName = readContextText(context.sectionName)
   const subSectionName = readContextText(context.subSectionName)
   const questionName = readContextText(question?.name)
+
   if (comment.length === 0 || assessmentSchemaId.length === 0 || sectionName.length === 0 || subSectionName.length === 0 || questionName.length === 0) {
     return []
   }
@@ -636,4 +670,31 @@ export const resolveNarrativeQualityTargets = (
     label: localizedQuestionLabel || (locale === 'fr' ? 'Commentaire' : 'Comment'),
     text: comment
   }]
+}
+
+export const resolveNarrativeQualityTargets = (
+  context: Record<string, unknown>,
+  activeLocale: string
+): NarrativeQualityTarget[] => {
+  const locale: NarrativeQualityLocale = activeLocale === 'fr' ? 'fr' : 'en'
+  const textarea = isRecord(context.textarea) ? context.textarea : null
+
+  if (textarea) {
+    return resolveTextareaNarrativeQualityTargets(textarea, locale)
+  }
+
+  const agreement = isRecord(context.agreement) ? context.agreement : null
+  if (agreement) {
+    return resolveAgreementNarrativeQualityTargets(agreement)
+  }
+
+  const assessment = isRecord(context.assessment) ? context.assessment : null
+  const assessmentResponse = isRecord(context.assessmentResponse) ? context.assessmentResponse : null
+  const assessmentSchemaId = readContextText(context.assessmentSchemaId) || readContextText(assessment?.egcs_cn_reviewschema)
+
+  if (assessmentResponse && assessmentSchemaId.length > 0) {
+    return resolveAssessmentResponseNarrativeQualityTargets(assessmentSchemaId, assessmentResponse, locale)
+  }
+
+  return resolveQuestionCommentNarrativeQualityTargets(context, assessmentSchemaId, locale)
 }

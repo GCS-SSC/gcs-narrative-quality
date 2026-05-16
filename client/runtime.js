@@ -107,38 +107,17 @@ const resolveQualityMeterBoolean = value => {
   return typeof value === 'boolean' ? value : undefined
 }
 
-/**
- * Resolves the per-field request config forwarded to the latest scorer surface.
- *
- * @param {Record<string, unknown>} settings Activation settings from the plugin host.
- * @returns {Record<string, unknown> | undefined}
- */
-export const resolveQualityMeterRequestConfig = settings => {
-  const requestConfigSettings = resolveQualityMeterObject(settings.request_config)
-  const requestConfig = {}
+const assignResolvedQualityMeterNumber = (target, key, settings, min, max) => {
+  const value = resolveQualityMeterNumber(settings[key], min, max)
 
-  if (
-    typeof requestConfigSettings.adaptiveRefinementPolicy === 'string'
-    && QUALITY_METER_REFINEMENT_POLICIES.has(requestConfigSettings.adaptiveRefinementPolicy)
-  ) {
-    requestConfig.adaptiveRefinementPolicy = requestConfigSettings.adaptiveRefinementPolicy
+  if (value !== undefined) {
+    target[key] = value
   }
+}
 
-  const presentationSettings = resolveQualityMeterObject(requestConfigSettings.presentation)
-  const presentation = {}
-  const mixedFitMinPercent = resolveQualityMeterNumber(presentationSettings.mixedFitMinPercent, 0, 100)
-  const strongFitMinPercent = resolveQualityMeterNumber(presentationSettings.strongFitMinPercent, 0, 100)
-
-  if (mixedFitMinPercent !== undefined) {
-    presentation.mixedFitMinPercent = mixedFitMinPercent
-  }
-
-  if (strongFitMinPercent !== undefined) {
-    presentation.strongFitMinPercent = strongFitMinPercent
-  }
-
-  const toneByBandSettings = resolveQualityMeterObject(presentationSettings.toneByBand)
+const resolveQualityMeterToneByBandConfig = presentationSettings => {
   const toneByBand = {}
+  const toneByBandSettings = resolveQualityMeterObject(presentationSettings.toneByBand)
 
   for (const [band, tone] of Object.entries(toneByBandSettings)) {
     if (typeof tone !== 'string' || !QUALITY_METER_PRESENTATION_TONES.has(tone)) {
@@ -150,103 +129,128 @@ export const resolveQualityMeterRequestConfig = settings => {
     }
   }
 
-  if (Object.keys(toneByBand).length > 0) {
+  return Object.keys(toneByBand).length > 0 ? toneByBand : undefined
+}
+
+const resolveQualityMeterPresentationConfig = requestConfigSettings => {
+  const presentationSettings = resolveQualityMeterObject(requestConfigSettings.presentation)
+  const presentation = {}
+
+  assignResolvedQualityMeterNumber(presentation, 'mixedFitMinPercent', presentationSettings, 0, 100)
+  assignResolvedQualityMeterNumber(presentation, 'strongFitMinPercent', presentationSettings, 0, 100)
+
+  const toneByBand = resolveQualityMeterToneByBandConfig(presentationSettings)
+
+  if (toneByBand !== undefined) {
     presentation.toneByBand = toneByBand
   }
 
-  if (Object.keys(presentation).length > 0) {
-    requestConfig.presentation = presentation
+  return Object.keys(presentation).length > 0 ? presentation : undefined
+}
+
+const addQualityMeterTaskTypes = (target, taskTypes) => {
+  if (!Array.isArray(taskTypes)) {
+    return false
   }
 
+  for (const taskType of taskTypes) {
+    if (typeof taskType === 'string' && QUALITY_METER_TASK_TYPES.has(taskType)) {
+      target.add(taskType)
+    }
+  }
+
+  return true
+}
+
+const applyQualityMeterTaskTypeToggle = (target, value, taskType) => {
+  if (value === true) {
+    target.add(taskType)
+  }
+
+  if (value === false) {
+    target.delete(taskType)
+  }
+
+  return typeof value === 'boolean'
+}
+
+const resolveQualityMeterTaskTypeStopConfig = adaptiveRefinementSettings => {
+  const disableHighStopForTaskTypes = new Set()
+  const hasExplicitTaskTypeList = addQualityMeterTaskTypes(
+    disableHighStopForTaskTypes,
+    adaptiveRefinementSettings.disableHighStopForTaskTypes
+  )
+  const hasExplicitComparisonToggle = applyQualityMeterTaskTypeToggle(
+    disableHighStopForTaskTypes,
+    adaptiveRefinementSettings.disableHighStopForComparison,
+    'comparison'
+  )
+  const hasExplicitPlanningToggle = applyQualityMeterTaskTypeToggle(
+    disableHighStopForTaskTypes,
+    adaptiveRefinementSettings.disableHighStopForPlanning,
+    'planning'
+  )
+
+  return hasExplicitTaskTypeList || hasExplicitComparisonToggle || hasExplicitPlanningToggle
+    ? [...disableHighStopForTaskTypes]
+    : undefined
+}
+
+const resolveQualityMeterAdaptiveRefinementConfig = requestConfigSettings => {
   const adaptiveRefinementSettings = resolveQualityMeterObject(requestConfigSettings.adaptiveRefinement)
   const adaptiveRefinement = {}
-  const lowStopOverallPercent = resolveQualityMeterNumber(adaptiveRefinementSettings.lowStopOverallPercent, 0, 100)
-  const lowStopAnswerSupport = resolveQualityMeterNumber(adaptiveRefinementSettings.lowStopAnswerSupport, 0, 1)
-  const lowStopMaxCriterionPercent = resolveQualityMeterNumber(adaptiveRefinementSettings.lowStopMaxCriterionPercent, 0, 100)
-  const lowStopSecondaryOverallBuffer = resolveQualityMeterNumber(adaptiveRefinementSettings.lowStopSecondaryOverallBuffer, 0, 100)
-  const lowStopLowCriterionShare = resolveQualityMeterNumber(adaptiveRefinementSettings.lowStopLowCriterionShare, 0, 1)
-  const highStopOverallPercent = resolveQualityMeterNumber(adaptiveRefinementSettings.highStopOverallPercent, 0, 100)
-  const highStopMinCriterionPercent = resolveQualityMeterNumber(adaptiveRefinementSettings.highStopMinCriterionPercent, 0, 100)
-  const highStopSpreadPercent = resolveQualityMeterNumber(adaptiveRefinementSettings.highStopSpreadPercent, 0, 100)
-  const highStopWeakAnswerGate = resolveQualityMeterNumber(adaptiveRefinementSettings.highStopWeakAnswerGate, 0, 1)
+
+  assignResolvedQualityMeterNumber(adaptiveRefinement, 'lowStopOverallPercent', adaptiveRefinementSettings, 0, 100)
+  assignResolvedQualityMeterNumber(adaptiveRefinement, 'lowStopAnswerSupport', adaptiveRefinementSettings, 0, 1)
+  assignResolvedQualityMeterNumber(adaptiveRefinement, 'lowStopMaxCriterionPercent', adaptiveRefinementSettings, 0, 100)
+  assignResolvedQualityMeterNumber(adaptiveRefinement, 'lowStopSecondaryOverallBuffer', adaptiveRefinementSettings, 0, 100)
+  assignResolvedQualityMeterNumber(adaptiveRefinement, 'lowStopLowCriterionShare', adaptiveRefinementSettings, 0, 1)
+  assignResolvedQualityMeterNumber(adaptiveRefinement, 'highStopOverallPercent', adaptiveRefinementSettings, 0, 100)
+  assignResolvedQualityMeterNumber(adaptiveRefinement, 'highStopMinCriterionPercent', adaptiveRefinementSettings, 0, 100)
+  assignResolvedQualityMeterNumber(adaptiveRefinement, 'highStopSpreadPercent', adaptiveRefinementSettings, 0, 100)
+  assignResolvedQualityMeterNumber(adaptiveRefinement, 'highStopWeakAnswerGate', adaptiveRefinementSettings, 0, 1)
+
   const disableHighStopForConstraintQuestions = resolveQualityMeterBoolean(
     adaptiveRefinementSettings.disableHighStopForConstraintQuestions
   )
-
-  if (lowStopOverallPercent !== undefined) {
-    adaptiveRefinement.lowStopOverallPercent = lowStopOverallPercent
-  }
-
-  if (lowStopAnswerSupport !== undefined) {
-    adaptiveRefinement.lowStopAnswerSupport = lowStopAnswerSupport
-  }
-
-  if (lowStopMaxCriterionPercent !== undefined) {
-    adaptiveRefinement.lowStopMaxCriterionPercent = lowStopMaxCriterionPercent
-  }
-
-  if (lowStopSecondaryOverallBuffer !== undefined) {
-    adaptiveRefinement.lowStopSecondaryOverallBuffer = lowStopSecondaryOverallBuffer
-  }
-
-  if (lowStopLowCriterionShare !== undefined) {
-    adaptiveRefinement.lowStopLowCriterionShare = lowStopLowCriterionShare
-  }
-
-  if (highStopOverallPercent !== undefined) {
-    adaptiveRefinement.highStopOverallPercent = highStopOverallPercent
-  }
-
-  if (highStopMinCriterionPercent !== undefined) {
-    adaptiveRefinement.highStopMinCriterionPercent = highStopMinCriterionPercent
-  }
-
-  if (highStopSpreadPercent !== undefined) {
-    adaptiveRefinement.highStopSpreadPercent = highStopSpreadPercent
-  }
-
-  if (highStopWeakAnswerGate !== undefined) {
-    adaptiveRefinement.highStopWeakAnswerGate = highStopWeakAnswerGate
-  }
 
   if (disableHighStopForConstraintQuestions !== undefined) {
     adaptiveRefinement.disableHighStopForConstraintQuestions = disableHighStopForConstraintQuestions
   }
 
-  const disableHighStopForTaskTypes = new Set()
-  const hasExplicitComparisonToggle = typeof adaptiveRefinementSettings.disableHighStopForComparison === 'boolean'
-  const hasExplicitPlanningToggle = typeof adaptiveRefinementSettings.disableHighStopForPlanning === 'boolean'
-  const hasExplicitTaskTypeList = Array.isArray(adaptiveRefinementSettings.disableHighStopForTaskTypes)
+  const disableHighStopForTaskTypes = resolveQualityMeterTaskTypeStopConfig(adaptiveRefinementSettings)
 
-  if (hasExplicitTaskTypeList) {
-    for (const taskType of adaptiveRefinementSettings.disableHighStopForTaskTypes) {
-      if (typeof taskType === 'string' && QUALITY_METER_TASK_TYPES.has(taskType)) {
-        disableHighStopForTaskTypes.add(taskType)
-      }
-    }
+  if (disableHighStopForTaskTypes !== undefined) {
+    adaptiveRefinement.disableHighStopForTaskTypes = disableHighStopForTaskTypes
   }
 
-  if (adaptiveRefinementSettings.disableHighStopForComparison === true) {
-    disableHighStopForTaskTypes.add('comparison')
+  return Object.keys(adaptiveRefinement).length > 0 ? adaptiveRefinement : undefined
+}
+
+/**
+ * Resolves the per-field request config forwarded to the latest scorer surface.
+ *
+ * @param {Record<string, unknown>} settings Activation settings from the plugin host.
+ * @returns {Record<string, unknown> | undefined}
+ */
+export const resolveQualityMeterRequestConfig = settings => {
+  const requestConfigSettings = resolveQualityMeterObject(settings.request_config)
+  const requestConfig = {}
+  const presentation = resolveQualityMeterPresentationConfig(requestConfigSettings)
+  const adaptiveRefinement = resolveQualityMeterAdaptiveRefinementConfig(requestConfigSettings)
+
+  if (
+    typeof requestConfigSettings.adaptiveRefinementPolicy === 'string'
+    && QUALITY_METER_REFINEMENT_POLICIES.has(requestConfigSettings.adaptiveRefinementPolicy)
+  ) {
+    requestConfig.adaptiveRefinementPolicy = requestConfigSettings.adaptiveRefinementPolicy
   }
 
-  if (adaptiveRefinementSettings.disableHighStopForComparison === false) {
-    disableHighStopForTaskTypes.delete('comparison')
+  if (presentation !== undefined) {
+    requestConfig.presentation = presentation
   }
 
-  if (adaptiveRefinementSettings.disableHighStopForPlanning === true) {
-    disableHighStopForTaskTypes.add('planning')
-  }
-
-  if (adaptiveRefinementSettings.disableHighStopForPlanning === false) {
-    disableHighStopForTaskTypes.delete('planning')
-  }
-
-  if (hasExplicitComparisonToggle || hasExplicitPlanningToggle || hasExplicitTaskTypeList) {
-    adaptiveRefinement.disableHighStopForTaskTypes = [...disableHighStopForTaskTypes]
-  }
-
-  if (Object.keys(adaptiveRefinement).length > 0) {
+  if (adaptiveRefinement !== undefined) {
     requestConfig.adaptiveRefinement = adaptiveRefinement
   }
 

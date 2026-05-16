@@ -112,7 +112,7 @@ const getScorer = async () => {
  * @param {number} requestId Host-issued score request id.
  * @returns {Promise<Record<string, unknown>>}
  */
-const scorePayload = async (payload, requestId) => {
+export const scorePayload = async (payload, requestId) => {
   const text = String(payload.text ?? '').trim()
   const locale = resolveQualityMeterLocale(String(payload.locale ?? 'en'))
   const groupKey = typeof payload.groupKey === 'string' ? payload.groupKey : ''

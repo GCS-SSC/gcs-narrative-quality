@@ -2,7 +2,12 @@
 /* eslint-disable jsdoc/require-jsdoc */
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import type { Ref } from 'vue'
-import type { GcsExtensionJsonConfig } from '@gcs-ssc/extensions'
+import type { GcsExtensionJsonConfig, GcsExtensionSlotContext } from '@gcs-ssc/extensions'
+import {
+  ExtensionBadge,
+  ExtensionProgress,
+  useExtensionI18n
+} from '@gcs-ssc/extensions/ui'
 import {
   normalizeNarrativeQualityConfig,
   resolveNarrativeQualityTargetConfig,
@@ -93,10 +98,10 @@ const {
   context = {}
 } = defineProps<{
   config: GcsExtensionJsonConfig
-  context?: Record<string, unknown>
+  context?: GcsExtensionSlotContext
 }>()
 
-const { locale } = useI18n()
+const { locale } = useExtensionI18n()
 
 const resultByKey: Ref<Record<string, QualityMeterResult>> = ref({})
 const errorByKey: Ref<Record<string, string>> = ref({})
@@ -116,7 +121,7 @@ const text = (key: keyof typeof labels) => {
   return locale.value === 'fr' ? item.fr : item.en
 }
 
-const targets = computed<NarrativeQualityTarget[]>(() => resolveNarrativeQualityTargets(context, locale.value))
+const targets = computed<NarrativeQualityTarget[]>(() => resolveNarrativeQualityTargets(context as Record<string, unknown>, locale.value))
 const enabledTargets = computed(() => {
   const normalizedConfig = normalizeNarrativeQualityConfig(config)
 
@@ -253,7 +258,7 @@ onBeforeUnmount(() => {
       v-for="target in enabledTargets"
       :key="target.key"
       class="space-y-2">
-      <UProgress
+      <ExtensionProgress
         :model-value="resultByKey[target.key]?.overallPercent || 0"
         :color="toneClasses(resultByKey[target.key]?.tone)"
         :max="100"
@@ -264,19 +269,19 @@ onBeforeUnmount(() => {
         }" />
 
       <div class="flex flex-wrap items-center gap-2">
-        <UBadge
+        <ExtensionBadge
           v-if="errorByKey[target.key]"
           color="error"
           variant="solid">
           {{ text('unavailable') }}
-        </UBadge>
+        </ExtensionBadge>
 
-        <UBadge
+        <ExtensionBadge
           v-else-if="localizedLabel(resultByKey[target.key]?.statusLabel)"
           :color="toneClasses(resultByKey[target.key]?.tone)"
           variant="solid">
           {{ localizedLabel(resultByKey[target.key]?.statusLabel) }}
-        </UBadge>
+        </ExtensionBadge>
 
         <div
           v-if="localizedLabel(resultByKey[target.key]?.activity?.label)"

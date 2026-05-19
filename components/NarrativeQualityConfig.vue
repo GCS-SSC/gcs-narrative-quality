@@ -3,6 +3,15 @@
 import { computed, ref, watch } from 'vue'
 import type { Ref } from 'vue'
 import type { JsonValue } from '@gcs-ssc/extensions'
+import {
+  ExtensionFormField,
+  ExtensionSection,
+  ExtensionSelect,
+  ExtensionSwitch,
+  useExtensionApi,
+  useExtensionFetch,
+  useExtensionI18n
+} from '@gcs-ssc/extensions/ui'
 import type { NarrativeQualityPluginUiNode } from './narrative-quality-plugin-ui'
 import configSchemaJson from '../ui/config.json'
 import NarrativeQualityConfigRenderer from './NarrativeQualityConfigRenderer.vue'
@@ -27,7 +36,8 @@ const { streamId = '' } = defineProps<{
   streamId?: string
 }>()
 
-const { locale } = useI18n()
+const { locale } = useExtensionI18n()
+const api = useExtensionApi('gcs-narrative-quality')
 
 const configSchema = configSchemaJson as NarrativeQualityPluginUiNode
 const activeTarget: Ref<NarrativeQualityTargetKey> = ref('agreement_top_level')
@@ -36,8 +46,8 @@ const selectedCommentSchemaId: Ref<string> = ref('')
 const selectedQuestionKey: Ref<string> = ref('')
 const state: Ref<NarrativeQualityConfig> = ref(normalizeNarrativeQualityConfig(model.value))
 
-const { data: catalogData, status: catalogStatus, error: catalogError } = useFetch<{ items: NarrativeQualityAssessmentTarget[] }>(
-  `/api/extensions/gcs-narrative-quality/streams/${streamId}/assessment-targets`,
+const { data: catalogData, status: catalogStatus, error: catalogError } = useExtensionFetch<{ items: NarrativeQualityAssessmentTarget[] }>(
+  api.path(`/streams/${streamId}/assessment-targets`),
   {
     server: false,
     immediate: streamId.length > 0,
@@ -266,50 +276,50 @@ const handleCurrentProfileEnabledUpdate = (value: boolean | string) => {
       </p>
     </div>
 
-    <CommonSection :title="text('targetSection')" badge="01" :grid-cols="2">
+    <ExtensionSection :title="text('targetSection')" badge="01" :grid-cols="2">
       <div class="space-y-2 md:col-span-2">
         <p class="text-sm text-zinc-500 dark:text-zinc-400">
           {{ text('targetDescription') }}
         </p>
       </div>
 
-      <UFormField :label="text('target')">
-        <USelect
+      <ExtensionFormField :label="text('target')">
+        <ExtensionSelect
           v-model="activeTarget"
           :items="targetOptions"
           value-key="value"
           label-key="label" />
-      </UFormField>
+      </ExtensionFormField>
 
-      <UFormField
+      <ExtensionFormField
         v-if="activeTarget === 'assessment_review_alignment_narrative'"
         :label="text('assessment')"
         :description="text('assessmentDescription')">
-        <USelect
+        <ExtensionSelect
           v-model="selectedAlignmentSchemaId"
           :items="assessmentOptions"
           value-key="value"
           label-key="label"
           :disabled="showLoadingState || showNoAssessments" />
-      </UFormField>
+      </ExtensionFormField>
 
-      <UFormField
+      <ExtensionFormField
         v-if="showQuestionField"
         :label="text('assessment')"
         :description="text('assessmentDescription')">
-        <USelect
+        <ExtensionSelect
           v-model="selectedCommentSchemaId"
           :items="assessmentOptions"
           value-key="value"
           label-key="label"
           :disabled="showLoadingState || showNoAssessments" />
-      </UFormField>
+      </ExtensionFormField>
 
-      <UFormField
+      <ExtensionFormField
         v-if="showQuestionField"
         :label="text('questionSelection')"
         :description="text('questionDescription')">
-        <USelect
+        <ExtensionSelect
           v-if="questionOptions.length > 0"
           v-model="selectedQuestionKey"
           :items="questionOptions"
@@ -320,16 +330,16 @@ const handleCurrentProfileEnabledUpdate = (value: boolean | string) => {
           class="text-sm text-zinc-500 dark:text-zinc-400">
           {{ text('noQuestions') }}
         </div>
-      </UFormField>
+      </ExtensionFormField>
 
-      <UFormField
+      <ExtensionFormField
         v-if="canEditSelectedTarget"
         :label="text('enabled')"
         :description="text('enabledDescription')">
-        <USwitch
+        <ExtensionSwitch
           :model-value="currentProfileEnabled"
           @update:model-value="handleCurrentProfileEnabledUpdate" />
-      </UFormField>
+      </ExtensionFormField>
 
       <div
         v-if="showLoadingState"
@@ -354,7 +364,7 @@ const handleCurrentProfileEnabledUpdate = (value: boolean | string) => {
         class="text-sm text-zinc-500 dark:text-zinc-400 md:col-span-2">
         {{ text('noQuestions') }}
       </div>
-    </CommonSection>
+    </ExtensionSection>
 
     <NarrativeQualityConfigRenderer
       v-if="canEditSelectedTarget && currentProfile"

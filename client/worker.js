@@ -3907,10 +3907,10 @@ var gl = Zr;
 }
 Object.defineProperty(K.versions, "web", { value: Ja, enumerable: true });
 
-// ../../node_modules/.bun/onnxruntime-common@1.24.3/node_modules/onnxruntime-common/dist/esm/version.js
-var version = "1.24.3";
+// ../../node_modules/.bun/onnxruntime-common@1.24.0-dev.20251116-b39e144322/node_modules/onnxruntime-common/dist/esm/version.js
+var version = "1.24.0-dev.20251116-b39e144322";
 
-// ../../node_modules/.bun/onnxruntime-common@1.24.3/node_modules/onnxruntime-common/dist/esm/env-impl.js
+// ../../node_modules/.bun/onnxruntime-common@1.24.0-dev.20251116-b39e144322/node_modules/onnxruntime-common/dist/esm/env-impl.js
 var logLevelValue = "warning";
 var env = {
   wasm: {},
@@ -3932,7 +3932,7 @@ var env = {
 };
 Object.defineProperty(env, "logLevel", { enumerable: true });
 
-// ../../node_modules/.bun/onnxruntime-common@1.24.3/node_modules/onnxruntime-common/dist/esm/tensor-conversion-impl.js
+// ../../node_modules/.bun/onnxruntime-common@1.24.0-dev.20251116-b39e144322/node_modules/onnxruntime-common/dist/esm/tensor-conversion-impl.js
 var tensorToDataURL = (tensor, options) => {
   const canvas = typeof document !== "undefined" ? document.createElement("canvas") : new OffscreenCanvas(1, 1);
   canvas.width = tensor.dims[3];
@@ -4091,7 +4091,7 @@ var tensorToImageData = (tensor, options) => {
   return image;
 };
 
-// ../../node_modules/.bun/onnxruntime-common@1.24.3/node_modules/onnxruntime-common/dist/esm/tensor-factory-impl.js
+// ../../node_modules/.bun/onnxruntime-common@1.24.0-dev.20251116-b39e144322/node_modules/onnxruntime-common/dist/esm/tensor-factory-impl.js
 var bufferToTensor = (buffer, options) => {
   if (buffer === void 0) {
     throw new Error("Image buffer must be defined");
@@ -4300,7 +4300,7 @@ var tensorFromMLTensor = (mlTensor, options) => {
 };
 var tensorFromPinnedBuffer = (type, buffer, dims) => new Tensor({ location: "cpu-pinned", type, data: buffer, dims: dims ?? [buffer.length] });
 
-// ../../node_modules/.bun/onnxruntime-common@1.24.3/node_modules/onnxruntime-common/dist/esm/tensor-impl-type-mapping.js
+// ../../node_modules/.bun/onnxruntime-common@1.24.0-dev.20251116-b39e144322/node_modules/onnxruntime-common/dist/esm/tensor-impl-type-mapping.js
 var NUMERIC_TENSOR_TYPE_TO_TYPEDARRAY_MAP = /* @__PURE__ */ new Map([
   ["float32", Float32Array],
   ["uint8", Uint8Array],
@@ -4349,7 +4349,7 @@ var checkTypedArray = () => {
   }
 };
 
-// ../../node_modules/.bun/onnxruntime-common@1.24.3/node_modules/onnxruntime-common/dist/esm/tensor-utils-impl.js
+// ../../node_modules/.bun/onnxruntime-common@1.24.0-dev.20251116-b39e144322/node_modules/onnxruntime-common/dist/esm/tensor-utils-impl.js
 var calculateSize = (dims) => {
   let size = 1;
   for (let i = 0; i < dims.length; i++) {
@@ -4401,7 +4401,7 @@ var tensorReshape = (tensor, dims) => {
   }
 };
 
-// ../../node_modules/.bun/onnxruntime-common@1.24.3/node_modules/onnxruntime-common/dist/esm/tensor-impl.js
+// ../../node_modules/.bun/onnxruntime-common@1.24.0-dev.20251116-b39e144322/node_modules/onnxruntime-common/dist/esm/tensor-impl.js
 var Tensor = class {
   /**
    * implementation.
@@ -4668,7 +4668,7 @@ var Tensor = class {
   }
 };
 
-// ../../node_modules/.bun/onnxruntime-common@1.24.3/node_modules/onnxruntime-common/dist/esm/tensor.js
+// ../../node_modules/.bun/onnxruntime-common@1.24.0-dev.20251116-b39e144322/node_modules/onnxruntime-common/dist/esm/tensor.js
 var Tensor2 = Tensor;
 
 // ../../node_modules/.bun/@huggingface+transformers@4.2.0/node_modules/@huggingface/transformers/dist/transformers.web.js
@@ -35019,24 +35019,15 @@ var resolveQualityMeterNumber = (value, min3, max2) => {
 var resolveQualityMeterBoolean = (value) => {
   return typeof value === "boolean" ? value : void 0;
 };
-var resolveQualityMeterRequestConfig = (settings) => {
-  const requestConfigSettings = resolveQualityMeterObject(settings.request_config);
-  const requestConfig = {};
-  if (typeof requestConfigSettings.adaptiveRefinementPolicy === "string" && QUALITY_METER_REFINEMENT_POLICIES.has(requestConfigSettings.adaptiveRefinementPolicy)) {
-    requestConfig.adaptiveRefinementPolicy = requestConfigSettings.adaptiveRefinementPolicy;
+var assignResolvedQualityMeterNumber = (target, key, settings, min3, max2) => {
+  const value = resolveQualityMeterNumber(settings[key], min3, max2);
+  if (value !== void 0) {
+    target[key] = value;
   }
-  const presentationSettings = resolveQualityMeterObject(requestConfigSettings.presentation);
-  const presentation = {};
-  const mixedFitMinPercent = resolveQualityMeterNumber(presentationSettings.mixedFitMinPercent, 0, 100);
-  const strongFitMinPercent = resolveQualityMeterNumber(presentationSettings.strongFitMinPercent, 0, 100);
-  if (mixedFitMinPercent !== void 0) {
-    presentation.mixedFitMinPercent = mixedFitMinPercent;
-  }
-  if (strongFitMinPercent !== void 0) {
-    presentation.strongFitMinPercent = strongFitMinPercent;
-  }
-  const toneByBandSettings = resolveQualityMeterObject(presentationSettings.toneByBand);
+};
+var resolveQualityMeterToneByBandConfig = (presentationSettings) => {
   const toneByBand = {};
+  const toneByBandSettings = resolveQualityMeterObject(presentationSettings.toneByBand);
   for (const [band, tone] of Object.entries(toneByBandSettings)) {
     if (typeof tone !== "string" || !QUALITY_METER_PRESENTATION_TONES.has(tone)) {
       continue;
@@ -35045,83 +35036,93 @@ var resolveQualityMeterRequestConfig = (settings) => {
       toneByBand[band] = tone;
     }
   }
-  if (Object.keys(toneByBand).length > 0) {
+  return Object.keys(toneByBand).length > 0 ? toneByBand : void 0;
+};
+var resolveQualityMeterPresentationConfig = (requestConfigSettings) => {
+  const presentationSettings = resolveQualityMeterObject(requestConfigSettings.presentation);
+  const presentation = {};
+  assignResolvedQualityMeterNumber(presentation, "mixedFitMinPercent", presentationSettings, 0, 100);
+  assignResolvedQualityMeterNumber(presentation, "strongFitMinPercent", presentationSettings, 0, 100);
+  const toneByBand = resolveQualityMeterToneByBandConfig(presentationSettings);
+  if (toneByBand !== void 0) {
     presentation.toneByBand = toneByBand;
   }
-  if (Object.keys(presentation).length > 0) {
-    requestConfig.presentation = presentation;
+  return Object.keys(presentation).length > 0 ? presentation : void 0;
+};
+var addQualityMeterTaskTypes = (target, taskTypes) => {
+  if (!Array.isArray(taskTypes)) {
+    return false;
   }
+  for (const taskType of taskTypes) {
+    if (typeof taskType === "string" && QUALITY_METER_TASK_TYPES.has(taskType)) {
+      target.add(taskType);
+    }
+  }
+  return true;
+};
+var applyQualityMeterTaskTypeToggle = (target, value, taskType) => {
+  if (value === true) {
+    target.add(taskType);
+  }
+  if (value === false) {
+    target.delete(taskType);
+  }
+  return typeof value === "boolean";
+};
+var resolveQualityMeterTaskTypeStopConfig = (adaptiveRefinementSettings) => {
+  const disableHighStopForTaskTypes = /* @__PURE__ */ new Set();
+  const hasExplicitTaskTypeList = addQualityMeterTaskTypes(
+    disableHighStopForTaskTypes,
+    adaptiveRefinementSettings.disableHighStopForTaskTypes
+  );
+  const hasExplicitComparisonToggle = applyQualityMeterTaskTypeToggle(
+    disableHighStopForTaskTypes,
+    adaptiveRefinementSettings.disableHighStopForComparison,
+    "comparison"
+  );
+  const hasExplicitPlanningToggle = applyQualityMeterTaskTypeToggle(
+    disableHighStopForTaskTypes,
+    adaptiveRefinementSettings.disableHighStopForPlanning,
+    "planning"
+  );
+  return hasExplicitTaskTypeList || hasExplicitComparisonToggle || hasExplicitPlanningToggle ? [...disableHighStopForTaskTypes] : void 0;
+};
+var resolveQualityMeterAdaptiveRefinementConfig = (requestConfigSettings) => {
   const adaptiveRefinementSettings = resolveQualityMeterObject(requestConfigSettings.adaptiveRefinement);
   const adaptiveRefinement = {};
-  const lowStopOverallPercent = resolveQualityMeterNumber(adaptiveRefinementSettings.lowStopOverallPercent, 0, 100);
-  const lowStopAnswerSupport = resolveQualityMeterNumber(adaptiveRefinementSettings.lowStopAnswerSupport, 0, 1);
-  const lowStopMaxCriterionPercent = resolveQualityMeterNumber(adaptiveRefinementSettings.lowStopMaxCriterionPercent, 0, 100);
-  const lowStopSecondaryOverallBuffer = resolveQualityMeterNumber(adaptiveRefinementSettings.lowStopSecondaryOverallBuffer, 0, 100);
-  const lowStopLowCriterionShare = resolveQualityMeterNumber(adaptiveRefinementSettings.lowStopLowCriterionShare, 0, 1);
-  const highStopOverallPercent = resolveQualityMeterNumber(adaptiveRefinementSettings.highStopOverallPercent, 0, 100);
-  const highStopMinCriterionPercent = resolveQualityMeterNumber(adaptiveRefinementSettings.highStopMinCriterionPercent, 0, 100);
-  const highStopSpreadPercent = resolveQualityMeterNumber(adaptiveRefinementSettings.highStopSpreadPercent, 0, 100);
-  const highStopWeakAnswerGate = resolveQualityMeterNumber(adaptiveRefinementSettings.highStopWeakAnswerGate, 0, 1);
+  assignResolvedQualityMeterNumber(adaptiveRefinement, "lowStopOverallPercent", adaptiveRefinementSettings, 0, 100);
+  assignResolvedQualityMeterNumber(adaptiveRefinement, "lowStopAnswerSupport", adaptiveRefinementSettings, 0, 1);
+  assignResolvedQualityMeterNumber(adaptiveRefinement, "lowStopMaxCriterionPercent", adaptiveRefinementSettings, 0, 100);
+  assignResolvedQualityMeterNumber(adaptiveRefinement, "lowStopSecondaryOverallBuffer", adaptiveRefinementSettings, 0, 100);
+  assignResolvedQualityMeterNumber(adaptiveRefinement, "lowStopLowCriterionShare", adaptiveRefinementSettings, 0, 1);
+  assignResolvedQualityMeterNumber(adaptiveRefinement, "highStopOverallPercent", adaptiveRefinementSettings, 0, 100);
+  assignResolvedQualityMeterNumber(adaptiveRefinement, "highStopMinCriterionPercent", adaptiveRefinementSettings, 0, 100);
+  assignResolvedQualityMeterNumber(adaptiveRefinement, "highStopSpreadPercent", adaptiveRefinementSettings, 0, 100);
+  assignResolvedQualityMeterNumber(adaptiveRefinement, "highStopWeakAnswerGate", adaptiveRefinementSettings, 0, 1);
   const disableHighStopForConstraintQuestions = resolveQualityMeterBoolean(
     adaptiveRefinementSettings.disableHighStopForConstraintQuestions
   );
-  if (lowStopOverallPercent !== void 0) {
-    adaptiveRefinement.lowStopOverallPercent = lowStopOverallPercent;
-  }
-  if (lowStopAnswerSupport !== void 0) {
-    adaptiveRefinement.lowStopAnswerSupport = lowStopAnswerSupport;
-  }
-  if (lowStopMaxCriterionPercent !== void 0) {
-    adaptiveRefinement.lowStopMaxCriterionPercent = lowStopMaxCriterionPercent;
-  }
-  if (lowStopSecondaryOverallBuffer !== void 0) {
-    adaptiveRefinement.lowStopSecondaryOverallBuffer = lowStopSecondaryOverallBuffer;
-  }
-  if (lowStopLowCriterionShare !== void 0) {
-    adaptiveRefinement.lowStopLowCriterionShare = lowStopLowCriterionShare;
-  }
-  if (highStopOverallPercent !== void 0) {
-    adaptiveRefinement.highStopOverallPercent = highStopOverallPercent;
-  }
-  if (highStopMinCriterionPercent !== void 0) {
-    adaptiveRefinement.highStopMinCriterionPercent = highStopMinCriterionPercent;
-  }
-  if (highStopSpreadPercent !== void 0) {
-    adaptiveRefinement.highStopSpreadPercent = highStopSpreadPercent;
-  }
-  if (highStopWeakAnswerGate !== void 0) {
-    adaptiveRefinement.highStopWeakAnswerGate = highStopWeakAnswerGate;
-  }
   if (disableHighStopForConstraintQuestions !== void 0) {
     adaptiveRefinement.disableHighStopForConstraintQuestions = disableHighStopForConstraintQuestions;
   }
-  const disableHighStopForTaskTypes = /* @__PURE__ */ new Set();
-  const hasExplicitComparisonToggle = typeof adaptiveRefinementSettings.disableHighStopForComparison === "boolean";
-  const hasExplicitPlanningToggle = typeof adaptiveRefinementSettings.disableHighStopForPlanning === "boolean";
-  const hasExplicitTaskTypeList = Array.isArray(adaptiveRefinementSettings.disableHighStopForTaskTypes);
-  if (hasExplicitTaskTypeList) {
-    for (const taskType of adaptiveRefinementSettings.disableHighStopForTaskTypes) {
-      if (typeof taskType === "string" && QUALITY_METER_TASK_TYPES.has(taskType)) {
-        disableHighStopForTaskTypes.add(taskType);
-      }
-    }
+  const disableHighStopForTaskTypes = resolveQualityMeterTaskTypeStopConfig(adaptiveRefinementSettings);
+  if (disableHighStopForTaskTypes !== void 0) {
+    adaptiveRefinement.disableHighStopForTaskTypes = disableHighStopForTaskTypes;
   }
-  if (adaptiveRefinementSettings.disableHighStopForComparison === true) {
-    disableHighStopForTaskTypes.add("comparison");
+  return Object.keys(adaptiveRefinement).length > 0 ? adaptiveRefinement : void 0;
+};
+var resolveQualityMeterRequestConfig = (settings) => {
+  const requestConfigSettings = resolveQualityMeterObject(settings.request_config);
+  const requestConfig = {};
+  const presentation = resolveQualityMeterPresentationConfig(requestConfigSettings);
+  const adaptiveRefinement = resolveQualityMeterAdaptiveRefinementConfig(requestConfigSettings);
+  if (typeof requestConfigSettings.adaptiveRefinementPolicy === "string" && QUALITY_METER_REFINEMENT_POLICIES.has(requestConfigSettings.adaptiveRefinementPolicy)) {
+    requestConfig.adaptiveRefinementPolicy = requestConfigSettings.adaptiveRefinementPolicy;
   }
-  if (adaptiveRefinementSettings.disableHighStopForComparison === false) {
-    disableHighStopForTaskTypes.delete("comparison");
+  if (presentation !== void 0) {
+    requestConfig.presentation = presentation;
   }
-  if (adaptiveRefinementSettings.disableHighStopForPlanning === true) {
-    disableHighStopForTaskTypes.add("planning");
-  }
-  if (adaptiveRefinementSettings.disableHighStopForPlanning === false) {
-    disableHighStopForTaskTypes.delete("planning");
-  }
-  if (hasExplicitComparisonToggle || hasExplicitPlanningToggle || hasExplicitTaskTypeList) {
-    adaptiveRefinement.disableHighStopForTaskTypes = [...disableHighStopForTaskTypes];
-  }
-  if (Object.keys(adaptiveRefinement).length > 0) {
+  if (adaptiveRefinement !== void 0) {
     requestConfig.adaptiveRefinement = adaptiveRefinement;
   }
   return Object.keys(requestConfig).length > 0 ? requestConfig : void 0;
@@ -35419,6 +35420,9 @@ if (typeof self !== "undefined") {
     });
   });
 }
+export {
+  scorePayload
+};
 /*! Bundled license information:
 
 onnxruntime-web/dist/ort.webgpu.bundle.min.mjs:

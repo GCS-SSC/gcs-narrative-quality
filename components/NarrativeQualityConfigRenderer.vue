@@ -2,6 +2,17 @@
 /* eslint-disable jsdoc/require-jsdoc */
 import { nanoid } from 'nanoid'
 import { computed, watch } from 'vue'
+import {
+  ExtensionAssessmentSchemaAccordionSection,
+  ExtensionButton,
+  ExtensionFormField,
+  ExtensionInput,
+  ExtensionRawTextarea,
+  ExtensionSection,
+  ExtensionSelect,
+  ExtensionSwitch,
+  useExtensionI18n
+} from '@gcs-ssc/extensions/ui'
 import type {
   NarrativeQualityPluginLabel,
   NarrativeQualityPluginUiNode
@@ -28,7 +39,7 @@ const emit = defineEmits<{
   'update:model': [value: Record<string, unknown>]
 }>()
 
-const { locale, t } = useI18n()
+const { locale, t } = useExtensionI18n()
 
 const fieldValue = computed(() => {
   if (!schema.key) {
@@ -197,7 +208,7 @@ watch(collectionItems, rows => {
       @update:model="value => emit('update:model', value)" />
   </div>
 
-  <CommonSection
+  <ExtensionSection
     v-else-if="schema.type === 'section'"
     :title="getText(schema.label)"
     :badge="schema.badge"
@@ -218,9 +229,9 @@ watch(collectionItems, rows => {
         :schema="child"
         @update:model="value => emit('update:model', value)" />
     </div>
-  </CommonSection>
+  </ExtensionSection>
 
-  <AssessmentSchemaAccordionSection
+  <ExtensionAssessmentSchemaAccordionSection
     v-else-if="schema.type === 'accordion'"
     :title="getText(schema.label)"
     :default-open="Boolean(schema.default_open)">
@@ -238,7 +249,7 @@ watch(collectionItems, rows => {
         :schema="child"
         @update:model="value => emit('update:model', value)" />
     </div>
-  </AssessmentSchemaAccordionSection>
+  </ExtensionAssessmentSchemaAccordionSection>
 
   <p v-else-if="schema.type === 'text'" class="text-sm text-zinc-500 dark:text-zinc-400">
     {{ getText(schema.value) }}
@@ -250,9 +261,9 @@ watch(collectionItems, rows => {
     {{ getText(schema.value) }}
   </div>
 
-  <UFormField v-else-if="schema.type === 'textarea' && schema.key" :label="getText(schema.label)">
+  <ExtensionFormField v-else-if="schema.type === 'textarea' && schema.key" :label="getText(schema.label)">
     <div class="space-y-2">
-      <UTextarea
+      <ExtensionRawTextarea
         :model-value="String(fieldValue ?? '')"
         :rows="schema.rows ?? 4"
         @update:model-value="(value: string | number) => updateField(String(value ?? ''))" />
@@ -262,11 +273,11 @@ watch(collectionItems, rows => {
         {{ getText(schema.description) }}
       </p>
     </div>
-  </UFormField>
+  </ExtensionFormField>
 
-  <UFormField v-else-if="schema.type === 'input' && schema.key" :label="getText(schema.label)">
+  <ExtensionFormField v-else-if="schema.type === 'input' && schema.key" :label="getText(schema.label)">
     <div class="space-y-2">
-      <UInput
+      <ExtensionInput
         :model-value="String(fieldValue ?? '')"
         @update:model-value="(value: string | number) => updateField(String(value ?? ''))" />
       <p
@@ -275,11 +286,11 @@ watch(collectionItems, rows => {
         {{ getText(schema.description) }}
       </p>
     </div>
-  </UFormField>
+  </ExtensionFormField>
 
-  <UFormField v-else-if="schema.type === 'number' && schema.key" :label="getText(schema.label)">
+  <ExtensionFormField v-else-if="schema.type === 'number' && schema.key" :label="getText(schema.label)">
     <div class="space-y-2">
-      <UInput
+      <ExtensionInput
         type="number"
         :model-value="String(fieldValue ?? '')"
         :min="schema.min"
@@ -295,11 +306,11 @@ watch(collectionItems, rows => {
         {{ getText(schema.description) }}
       </p>
     </div>
-  </UFormField>
+  </ExtensionFormField>
 
-  <UFormField v-else-if="schema.type === 'select' && schema.key" :label="getText(schema.label)">
+  <ExtensionFormField v-else-if="schema.type === 'select' && schema.key" :label="getText(schema.label)">
     <div class="space-y-2">
-      <USelect
+      <ExtensionSelect
         :model-value="String(fieldValue ?? '')"
         :items="(schema.options ?? []).map(option => ({ value: option.value, label: getText(option.label) }))"
         value-key="value"
@@ -311,11 +322,11 @@ watch(collectionItems, rows => {
         {{ getText(schema.description) }}
       </p>
     </div>
-  </UFormField>
+  </ExtensionFormField>
 
-  <UFormField v-else-if="schema.type === 'switch' && schema.key" :label="getText(schema.label)">
+  <ExtensionFormField v-else-if="schema.type === 'switch' && schema.key" :label="getText(schema.label)">
     <div class="space-y-2">
-      <USwitch
+      <ExtensionSwitch
         :model-value="Boolean(fieldValue)"
         @update:model-value="(value: boolean) => updateField(Boolean(value))" />
       <p
@@ -324,10 +335,10 @@ watch(collectionItems, rows => {
         {{ getText(schema.description) }}
       </p>
     </div>
-  </UFormField>
+  </ExtensionFormField>
 
   <div v-else-if="schema.type === 'collection' && schema.key" class="space-y-4">
-    <AssessmentSchemaAccordionSection :title="getText(schema.label)" :default-open="true">
+    <ExtensionAssessmentSchemaAccordionSection :title="getText(schema.label)" :default-open="true">
       <div class="space-y-4">
         <p
           v-if="schema.description"
@@ -336,7 +347,7 @@ watch(collectionItems, rows => {
         </p>
 
         <div class="flex justify-end">
-          <UButton
+          <ExtensionButton
             icon="i-lucide-plus"
             :label="getText(schema.add_label) || t('common.add')"
             variant="outline"
@@ -350,7 +361,7 @@ watch(collectionItems, rows => {
           {{ getText(schema.empty_label) }}
         </p>
 
-        <AssessmentSchemaAccordionSection
+        <ExtensionAssessmentSchemaAccordionSection
           v-for="(row, rowIndex) in collectionItems"
           :key="ensureCollectionItemKey(row)"
           :title="getCollectionItemTitle(row, rowIndex)"
@@ -363,7 +374,7 @@ watch(collectionItems, rows => {
               @update:model="value => updateCollectionItem(rowIndex, value)" />
 
             <div class="flex justify-end">
-              <UButton
+              <ExtensionButton
                 icon="i-lucide-trash"
                 color="error"
                 variant="ghost"
@@ -371,8 +382,8 @@ watch(collectionItems, rows => {
                 @click="removeCollectionItem(rowIndex)" />
             </div>
           </div>
-        </AssessmentSchemaAccordionSection>
+        </ExtensionAssessmentSchemaAccordionSection>
       </div>
-    </AssessmentSchemaAccordionSection>
+    </ExtensionAssessmentSchemaAccordionSection>
   </div>
 </template>

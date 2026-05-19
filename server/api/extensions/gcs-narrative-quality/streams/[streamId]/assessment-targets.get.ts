@@ -1,11 +1,13 @@
 /* eslint-disable jsdoc/require-jsdoc */
 import {
   AssessmentDefinitionSchema,
+  defineGcsExtensionRouteHandler,
   getReviewSchemaEffectiveContent,
   resolveExtensionStreamContext
 } from '@gcs-ssc/extensions/server'
 import type {
   ExtensionStreamContextQueryBuilder,
+  GcsExtensionRouteContext,
   ReviewSchemaContentSource
 } from '@gcs-ssc/extensions/server'
 
@@ -37,7 +39,7 @@ const buildQuestionKey = (sectionName: string, subSectionName: string, questionN
   `${sectionName}::${subSectionName}::${questionName}`
 
 const createExtensionRouteErrorResponse = (
-  event: Parameters<EventHandler>[0],
+  context: GcsExtensionRouteContext,
   statusCode: number,
   code: string,
   message: string
@@ -49,6 +51,7 @@ const createExtensionRouteErrorResponse = (
     code: string
   }
 } => {
+  const { event } = context
   if (event.node?.res) {
     event.node.res.statusCode = statusCode
     event.node.res.statusMessage = message
@@ -64,24 +67,24 @@ const createExtensionRouteErrorResponse = (
   }
 }
 
-export default async (event: Parameters<EventHandler>[0]) => {
-  const db = event.context.$db as AssessmentTargetRouteDatabase
-  const streamId = typeof event.context.params?.streamId === 'string'
-    ? event.context.params.streamId
+export default defineGcsExtensionRouteHandler(async context => {
+  const db = context.db as AssessmentTargetRouteDatabase
+  const streamId = typeof context.params.streamId === 'string'
+    ? context.params.streamId
     : undefined
 
   if (!streamId) {
-    return createExtensionRouteErrorResponse(event, 400, 'MISSING_ID', 'Missing stream id.')
+    return createExtensionRouteErrorResponse(context, 400, 'MISSING_ID', 'Missing stream id.')
   }
 
   const streamContext = await resolveExtensionStreamContext(db, streamId)
   if (!streamContext) {
-    return createExtensionRouteErrorResponse(event, 404, 'TRANSFER_PAYMENT_STREAM_NOT_FOUND', 'Transfer payment stream not found.')
+    return createExtensionRouteErrorResponse(context, 404, 'TRANSFER_PAYMENT_STREAM_NOT_FOUND', 'Transfer payment stream not found.')
   }
 
-  const authContext = event.context.$authContext
+  const authContext = context.auth
   if (!authContext) {
-    return createExtensionRouteErrorResponse(event, 401, 'AUTH_UNAUTHORIZED', 'Unauthorized.')
+    return createExtensionRouteErrorResponse(context, 401, 'AUTH_UNAUTHORIZED', 'Unauthorized.')
   }
 
   const canAccessWithTeam = await authContext.userAbilities.authorizeWithTeam(
@@ -95,7 +98,7 @@ export default async (event: Parameters<EventHandler>[0]) => {
 
   const canAccessScope = authContext.userAbilities.authorize('transfer_payment', 'read', streamContext.scope)
   if (!canAccessWithTeam && !canAccessScope) {
-    return createExtensionRouteErrorResponse(event, 403, 'AUTH_FORBIDDEN', 'Forbidden.')
+    return createExtensionRouteErrorResponse(context, 403, 'AUTH_FORBIDDEN', 'Forbidden.')
   }
 
   const assessmentSets = await db
@@ -167,4 +170,4 @@ export default async (event: Parameters<EventHandler>[0]) => {
   return {
     items
   }
-}
+})

@@ -59,7 +59,7 @@ const mountComponent = async (items = assessmentCatalog) => {
           props: ['title', 'badge', 'gridCols'],
           template: '<section><h4>{{ title }}</h4><slot /></section>'
         },
-        AssessmentSchemaAccordionSection: {
+        CommonAssessmentSchemaAccordionSection: {
           props: ['title', 'defaultOpen', 'level'],
           template: '<section><h5>{{ title }}</h5><slot /></section>'
         },

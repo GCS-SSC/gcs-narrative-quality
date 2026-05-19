@@ -54,6 +54,13 @@ describe('gcs narrative quality extension', () => {
     expect(extensionDefinition.serverHandlers).toEqual([{
       route: '/streams/[streamId]/assessment-targets',
       method: 'get',
+      rbac: {
+        subject: 'transfer_payment',
+        action: 'read',
+        stream: {
+          param: 'streamId'
+        }
+      },
       path: './server/api/extensions/gcs-narrative-quality/streams/[streamId]/assessment-targets.get.ts'
     }])
   })
@@ -254,13 +261,13 @@ describe('gcs narrative quality extension', () => {
     const rendererSource = await readFile(resolve(extensionRoot, 'components/NarrativeQualityConfigRenderer.vue'), 'utf8')
     const helperSource = await readFile(resolve(extensionRoot, 'components/narrative-quality.ts'), 'utf8')
 
-    expect(componentSource).toContain('/api/extensions/gcs-narrative-quality/streams/${streamId}/assessment-targets')
+    expect(componentSource).toContain('api.path(`/streams/${streamId}/assessment-targets`)')
     expect(componentSource).toContain('assessment: { en: \'Assessment\'')
     expect(componentSource).toContain('questionSelection: { en: \'Question\'')
     expect(helperSource).toContain('questionComments')
-    expect(componentSource).toContain('<CommonSection :title="text(\'targetSection\')" badge="01" :grid-cols="2">')
+    expect(componentSource).toContain('<ExtensionSection :title="text(\'targetSection\')" badge="01" :grid-cols="2">')
     expect(componentSource).toContain('<NarrativeQualityConfigRenderer')
-    expect(rendererSource).toContain('<AssessmentSchemaAccordionSection')
-    expect(rendererSource).toContain('<CommonSection')
+    expect(rendererSource).toContain('<ExtensionAssessmentSchemaAccordionSection')
+    expect(rendererSource).toContain('<ExtensionSection')
   })
 })

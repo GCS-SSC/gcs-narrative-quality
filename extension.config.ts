@@ -2,6 +2,16 @@ import { defineGcsExtension } from '@gcs-ssc/extensions'
 
 export default defineGcsExtension({
   key: 'gcs-narrative-quality',
+  sdkVersion: '^0.1.0',
+  requiredHostCapabilities: [
+    'stream-config-modal',
+    'textarea-slots',
+    'server-handlers',
+    'server-handler-rbac',
+    'public-assets',
+    'extension-ui',
+    'extension-api-client'
+  ],
   name: {
     en: 'Narrative Quality',
     fr: 'Qualité narrative'
@@ -38,6 +48,11 @@ export default defineGcsExtension({
     {
       route: '/streams/[streamId]/assessment-targets',
       method: 'get',
+      rbac: {
+        subject: 'transfer_payment',
+        action: 'read',
+        stream: { param: 'streamId' }
+      },
       path: './server/api/extensions/gcs-narrative-quality/streams/[streamId]/assessment-targets.get.ts'
     }
   ]

@@ -1,10 +1,12 @@
-/* eslint-disable jsdoc/require-jsdoc */
 import type { NarrativeQualityPluginUiNode } from './narrative-quality-plugin-ui'
 
 type DefaultValueFactory = (schema: NarrativeQualityPluginUiNode, skipSchemaKey: boolean) => unknown
 
 const getPathSegments = (path: string) => path.split('.').filter(segment => segment.trim().length > 0)
 
+/**
+ * Reads a dot-delimited model path without traversing through nullish or primitive values.
+ */
 const getModelValue = (model: Record<string, unknown>, path: string) =>
   getPathSegments(path).reduce<unknown>((current, segment) => {
     if (typeof current !== 'object' || current === null) {
@@ -17,6 +19,9 @@ const getModelValue = (model: Record<string, unknown>, path: string) =>
 const isPlainRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value)
 
+/**
+ * Mutates a dot-delimited model path, creating object containers and ignoring an empty path.
+ */
 export const setModelValue = (model: Record<string, unknown>, path: string, value: unknown) => {
   const segments = getPathSegments(path)
   if (segments.length === 0) {
@@ -169,9 +174,15 @@ const mergeValues = (defaults: unknown, current: unknown): unknown => {
   return cloneValue(current)
 }
 
+/**
+ * Creates detached schema defaults, recursively overlaying records while treating arrays as atomic values.
+ */
 export const mergePluginUiDefaults = (schema: NarrativeQualityPluginUiNode | undefined, currentValue?: unknown): unknown => {
   const defaultValue = createDefaultValue(schema)
   return mergeValues(defaultValue, currentValue)
 }
 
+/**
+ * Reads a value from a dot-delimited plugin UI model path, returning undefined when traversal cannot continue.
+ */
 export const getPluginModelValue = getModelValue

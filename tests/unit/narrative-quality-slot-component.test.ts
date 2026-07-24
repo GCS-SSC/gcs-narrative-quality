@@ -1,5 +1,4 @@
 // @vitest-environment jsdom
-/* eslint-disable jsdoc/require-jsdoc */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import { h, ref } from 'vue'

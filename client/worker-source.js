@@ -34,7 +34,7 @@ const sleep = (durationMs) =>
  * Resolves worker-side fetch inputs against the same-origin plugin asset host.
  *
  * @param {RequestInfo | URL} input Fetch input emitted by the scorer/runtime stack.
- * @returns {URL}
+ * @returns {URL} Fresh URL normalized against the configured model asset base.
  */
 const resolveWorkerFetchUrl = input => {
   if (input instanceof URL) {
@@ -51,7 +51,7 @@ const resolveWorkerFetchUrl = input => {
 /**
  * Creates and loads the in-worker scorer once for the lifetime of this plugin worker.
  *
- * @returns {Promise<ReturnType<typeof createTransformersQualityScorer>>}
+ * @returns {Promise<ReturnType<typeof createTransformersQualityScorer>>} Shared scorer promise; failed initialization is cleared so a later call can retry.
  */
 const getScorer = async () => {
   if (!scorerPromise) {
@@ -68,7 +68,7 @@ const getScorer = async () => {
        *
        * @param {RequestInfo | URL} input Fetch input emitted by transformers.js.
        * @param {RequestInit | undefined} init Optional fetch init.
-       * @returns {Promise<Response>}
+       * @returns {Promise<Response>} Response from the model request after same-origin URL normalization.
        */
       transformersEnv.fetch = async (input, init) => {
         const resolvedUrl = resolveWorkerFetchUrl(input)
@@ -106,11 +106,12 @@ const getScorer = async () => {
 }
 
 /**
- * Scores one plugin payload using the library fast pass plus adaptive refinement.
+ * Scores one plugin payload using the library fast pass plus adaptive refinement, posting progress states to the host.
  *
  * @param {Record<string, unknown>} payload Structured payload received from the host worker bridge.
  * @param {number} requestId Host-issued score request id.
- * @returns {Promise<Record<string, unknown>>}
+ * @returns {Promise<Record<string, unknown>>} Final localized score payload, or an empty object when required input is absent.
+ * @throws {WorkerScoreRequestSupersededError} When a newer pending score replaces the same group.
  */
 export const scorePayload = async (payload, requestId) => {
   const text = String(payload.text ?? '').trim()

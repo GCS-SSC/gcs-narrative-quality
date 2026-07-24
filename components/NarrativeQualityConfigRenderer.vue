@@ -1,5 +1,4 @@
 <script setup lang="ts">
-/* eslint-disable jsdoc/require-jsdoc */
 import { nanoid } from 'nanoid'
 import { computed, watch } from 'vue'
 import {
@@ -66,6 +65,9 @@ const getText = (value?: NarrativeQualityPluginLabel) => {
   return locale.value === 'fr' ? value.fr : value.en
 }
 
+/**
+ * Converts strings, numbers, and bilingual labels to display text in the active locale.
+ */
 const getDisplayText = (value: unknown) => {
   if (typeof value === 'string') {
     return value
@@ -131,6 +133,9 @@ const addCollectionItem = () => {
   replaceCollectionItems([...collectionItems.value, nextItem])
 }
 
+/**
+ * Replaces a collection row only with an object value while preserving its stable render key.
+ */
 const updateCollectionItem = (index: number, value: unknown) => {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) {
     return

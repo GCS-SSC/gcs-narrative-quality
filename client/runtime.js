@@ -45,7 +45,7 @@ const QUALITY_METER_TASK_TYPES = new Set([
  * Resolves one plugin asset URL against the host origin injected by the sandbox bootstrap.
  *
  * @param {string} relativePath Plugin asset path served by the GCS host.
- * @returns {string}
+ * @returns {string} Asset URL rooted at the injected host or current origin, or the original path when neither is available.
  */
 export const resolveQualityMeterAssetUrl = relativePath => {
   const hostOrigin = typeof globalThis.__GCS_PLUGIN_HOST_ORIGIN__ === 'string'
@@ -67,17 +67,17 @@ export const resolveQualityMeterAssetUrl = relativePath => {
  * Resolves the runtime locale used for plugin field scoring.
  *
  * @param {string} locale Active field locale from the host runtime.
- * @returns {'en' | 'fr'}
+ * @returns {'en' | 'fr'} French for the exact `fr` locale; otherwise English.
  */
 export const resolveQualityMeterLocale = locale => {
   return locale === 'fr' ? 'fr' : 'en'
 }
 
 /**
- * Normalizes unknown plugin settings nodes to plain objects.
+ * Normalizes nullish and primitive plugin settings nodes to an empty object.
  *
  * @param {unknown} value Candidate nested settings value.
- * @returns {Record<string, unknown>}
+ * @returns {Record<string, unknown>} Original non-null object-like value, otherwise an empty object.
  */
 const resolveQualityMeterObject = value => {
   return typeof value === 'object' && value !== null
@@ -91,7 +91,7 @@ const resolveQualityMeterObject = value => {
  * @param {unknown} value Candidate numeric value from plugin settings.
  * @param {number} min Inclusive lower bound.
  * @param {number} max Inclusive upper bound.
- * @returns {number | undefined}
+ * @returns {number | undefined} Parsed finite number clamped to the inclusive bounds, or `undefined` for non-finite input.
  */
 const resolveQualityMeterNumber = (value, min, max) => {
   const nextValue = typeof value === 'number' ? value : Number(value)
@@ -174,6 +174,9 @@ const applyQualityMeterTaskTypeToggle = (target, value, taskType) => {
   return typeof value === 'boolean'
 }
 
+/**
+ * Combines the recognized task-type list and explicit toggles, preserving an explicit empty selection.
+ */
 const resolveQualityMeterTaskTypeStopConfig = adaptiveRefinementSettings => {
   const disableHighStopForTaskTypes = new Set()
   const hasExplicitTaskTypeList = addQualityMeterTaskTypes(
@@ -196,6 +199,9 @@ const resolveQualityMeterTaskTypeStopConfig = adaptiveRefinementSettings => {
     : undefined
 }
 
+/**
+ * Keeps recognized adaptive-refinement settings, clamps numeric thresholds, and omits an empty section.
+ */
 const resolveQualityMeterAdaptiveRefinementConfig = requestConfigSettings => {
   const adaptiveRefinementSettings = resolveQualityMeterObject(requestConfigSettings.adaptiveRefinement)
   const adaptiveRefinement = {}
@@ -231,7 +237,7 @@ const resolveQualityMeterAdaptiveRefinementConfig = requestConfigSettings => {
  * Resolves the per-field request config forwarded to the latest scorer surface.
  *
  * @param {Record<string, unknown>} settings Activation settings from the plugin host.
- * @returns {Record<string, unknown> | undefined}
+ * @returns {Record<string, unknown> | undefined} Recognized normalized request settings, or `undefined` when none are present.
  */
 export const resolveQualityMeterRequestConfig = settings => {
   const requestConfigSettings = resolveQualityMeterObject(settings.request_config)
@@ -262,7 +268,7 @@ export const resolveQualityMeterRequestConfig = settings => {
  *
  * @param {Record<string, unknown>} settings Activation settings from the plugin host.
  * @param {'en' | 'fr'} locale Active runtime locale for the field.
- * @returns {{ question: string, criteria: Array<string | { label: string, weight?: number }>, requestConfig?: Record<string, unknown> }}
+ * @returns {{ question: string, criteria: Array<string | { label: string, weight?: number }>, requestConfig?: Record<string, unknown> }} Trimmed localized question, non-empty criteria, and optional normalized request settings.
  */
 export const resolveQualityMeterInput = (settings, locale) => {
   const questionConfig = resolveQualityMeterObject(settings.question)
@@ -297,7 +303,7 @@ export const resolveQualityMeterInput = (settings, locale) => {
  * @param {{ overallPercent: number, band: 'off_track' | 'mixed_fit' | 'strong_fit', tone: string, breakdown: unknown[] }} result Language-agnostic library score result.
  * @param {'fast' | 'full'} scoreMode Final score mode used for the response.
  * @param {{ shouldRunFullPass: boolean, reason: string, riskBand: string, fastOverallPercent: number } | null} refinement Adaptive refinement decision.
- * @returns {{ overallPercent: number, band: 'off_track' | 'mixed_fit' | 'strong_fit', tone: string, label: { en: string, fr: string }, scoreMode: 'fast' | 'full', refinement: { shouldRunFullPass: boolean, reason: string, riskBand: string, fastOverallPercent: number } | null, breakdown: unknown[] }}
+ * @returns {{ overallPercent: number, band: 'off_track' | 'mixed_fit' | 'strong_fit', tone: string, label: { en: string, fr: string }, statusLabel: { en: string, fr: string }, scoreMode: 'fast' | 'full', refinement: { shouldRunFullPass: boolean, reason: string, riskBand: string, fastOverallPercent: number } | null, breakdown: unknown[], activity: null }} Host-renderer payload with localized labels and the supplied score metadata.
  */
 export const createQualityMeterRuntimeResult = (result, scoreMode, refinement) => {
   return {
@@ -316,7 +322,7 @@ export const createQualityMeterRuntimeResult = (result, scoreMode, refinement) =
 /**
  * Creates the localized pending state shown while the worker is still evaluating the field.
  *
- * @returns {{ statusLabel: { en: string, fr: string }, tone: 'warning', activity: null }}
+ * @returns {{ statusLabel: { en: string, fr: string }, tone: 'warning', activity: null }} Localized scoring status with warning tone and no activity.
  */
 export const createQualityMeterPendingResult = () => {
   return {
@@ -331,7 +337,7 @@ export const createQualityMeterPendingResult = () => {
  *
  * @param {{ overallPercent: number, band: 'off_track' | 'mixed_fit' | 'strong_fit', tone: string, breakdown: unknown[] }} result Fast-pass language-agnostic score result.
  * @param {{ shouldRunFullPass: boolean, reason: string, riskBand: string, fastOverallPercent: number } | null} refinement Adaptive refinement decision.
- * @returns {{ overallPercent: number, band: 'off_track' | 'mixed_fit' | 'strong_fit', tone: string, label: { en: string, fr: string }, statusLabel: { en: string, fr: string }, scoreMode: 'fast', refinement: { shouldRunFullPass: boolean, reason: string, riskBand: string, fastOverallPercent: number } | null, breakdown: unknown[], activity: { label: { en: string, fr: string } } }}
+ * @returns {{ overallPercent: number, band: 'off_track' | 'mixed_fit' | 'strong_fit', tone: string, label: { en: string, fr: string }, statusLabel: { en: string, fr: string }, scoreMode: 'fast', refinement: { shouldRunFullPass: boolean, reason: string, riskBand: string, fastOverallPercent: number } | null, breakdown: unknown[], activity: { label: { en: string, fr: string } } }} Fast-pass host payload with a localized refining activity indicator.
  */
 export const createQualityMeterRefiningResult = (result, refinement) => {
   return {

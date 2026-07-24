@@ -1,5 +1,4 @@
 <script setup lang="ts">
-/* eslint-disable jsdoc/require-jsdoc */
 import { computed, ref, watch } from 'vue'
 import type { Ref } from 'vue'
 import type { JsonValue } from '@gcs-ssc/extensions'
@@ -166,6 +165,9 @@ const questionOptions = computed(() => (selectedCommentAssessment.value?.questio
   value: item.key
 })))
 
+/**
+ * Resolves an assessment-level or exact question profile, returning `null` for incomplete selections.
+ */
 const getAssessmentProfile = (
   schemaId: string,
   targetKey: 'reviewAlignment' | 'questionComments',

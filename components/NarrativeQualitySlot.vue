@@ -1,5 +1,4 @@
 <script setup lang="ts">
-/* eslint-disable jsdoc/require-jsdoc */
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import type { Ref } from 'vue'
 import type { GcsExtensionJsonConfig, GcsExtensionSlotContext } from '@gcs-ssc/extensions'
@@ -155,6 +154,9 @@ const toneClasses = (tone: QualityMeterResult['tone']) => {
   return 'neutral'
 }
 
+/**
+ * Applies only the latest mapped worker response, discarding stale or unknown request messages.
+ */
 const handleWorkerMessage = (message: WorkerMessage) => {
   const requestId = typeof message.requestId === 'number' ? message.requestId : 0
   const targetKey = requestKeyById.value[requestId]
@@ -188,6 +190,9 @@ const clearPendingScoreTimers = () => {
   pendingScoreTimers.value = {}
 }
 
+/**
+ * Debounces scoring per target and records the request mappings before posting to the shared worker.
+ */
 const scheduleScoreRequest = (target: NarrativeQualityTarget & { settings: unknown }) => {
   const existingTimer = pendingScoreTimers.value[target.key]
   if (existingTimer) {

@@ -33,7 +33,7 @@ export const resetWorkerScoreRequestQueue = () => {
  *
  * @param {{ text: string, locale: string, question: string, criteria: unknown, requestConfig: unknown }} payload
  *   Normalized score input forwarded to the plugin worker.
- * @returns {string}
+ * @returns {string} JSON fingerprint preserving the payload field order used by the queue.
  */
 export const createWorkerScoreCacheKey = ({
   text,
@@ -54,7 +54,7 @@ export const createWorkerScoreCacheKey = ({
  * Identifies queue replacement errors so the worker can avoid reporting stale requests as failures.
  *
  * @param {unknown} error Candidate error.
- * @returns {boolean}
+ * @returns {boolean} `true` only when the value is a queue replacement error.
  */
 export const isWorkerScoreRequestSupersededError = error =>
   error instanceof WorkerScoreRequestSupersededError
@@ -93,13 +93,14 @@ const runNextScoreRequest = () => {
 }
 
 /**
- * Queues one worker score request and reuses the same promise for identical inputs.
+ * Queues one worker score request, reusing cached or in-flight promises for identical inputs.
  *
  * @template T
  * @param {string} cacheKey Stable request fingerprint for memoization.
  * @param {() => Promise<T>} run Async scorer execution for this request.
  * @param {{ groupKey?: string }} [options] Queue controls for dropping stale pending requests.
- * @returns {Promise<T>}
+ * @returns {Promise<T>} Cached, in-flight, or newly queued score promise for the request.
+ * @throws {WorkerScoreRequestSupersededError} When a newer pending request replaces the same group.
  */
 export const queueWorkerScoreRequest = (cacheKey, run, options = {}) => {
   const cached = scoreResultCache.get(cacheKey)

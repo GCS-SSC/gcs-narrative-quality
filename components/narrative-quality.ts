@@ -1,4 +1,3 @@
-/* eslint-disable jsdoc/require-jsdoc */
 import type { JsonValue } from '@gcs-ssc/extensions'
 
 export type NarrativeQualityLocale = 'en' | 'fr'
@@ -211,6 +210,9 @@ const hasOwnProfileContent = (value: unknown): boolean => {
     || 'request_config' in value
 }
 
+/**
+ * Filters criteria to non-empty labels, clamps weights, and clones defaults when no usable rows remain.
+ */
 const normalizeCriteria = (
   value: unknown,
   fallback: NarrativeQualityCriterion[]
@@ -238,6 +240,9 @@ const normalizeCriteria = (
   return normalized.length > 0 ? normalized : fallback.map(item => ({ ...item }))
 }
 
+/**
+ * Builds a complete request configuration by validating input and filling every missing field from defaults.
+ */
 const normalizeRequestConfig = (
   value: unknown,
   defaults: NarrativeQualityRequestConfig
@@ -284,6 +289,9 @@ const normalizeRequestConfig = (
   }
 }
 
+/**
+ * Normalizes a profile into complete bilingual prompts, criteria, and request settings.
+ */
 const normalizeProfile = (
   value: unknown,
   defaults: NarrativeQualityProfile,
@@ -351,12 +359,18 @@ const ensureAssessmentConfig = (
   return created
 }
 
+/**
+ * Builds the persisted question key by joining its schema path names with the `::` delimiter.
+ */
 export const buildNarrativeQualityQuestionKey = (
   sectionName: string,
   subSectionName: string,
   questionName: string
 ) => `${sectionName}::${subSectionName}::${questionName}`
 
+/**
+ * Creates fresh adaptive-refinement thresholds and score-band presentation defaults.
+ */
 export const createDefaultNarrativeQualityRequestConfig = (): NarrativeQualityRequestConfig => ({
   adaptiveRefinementPolicy: 'adaptive',
   adaptiveRefinement: {
@@ -384,6 +398,9 @@ export const createDefaultNarrativeQualityRequestConfig = (): NarrativeQualityRe
   }
 })
 
+/**
+ * Creates a disabled target profile with cloned bilingual criteria and fresh request settings.
+ */
 export const createDefaultNarrativeQualityProfile = (
   targetKey: NarrativeQualityTargetKey
 ): NarrativeQualityProfile => ({
@@ -398,6 +415,9 @@ export const createDefaultNarrativeQualityProfile = (
   request_config: createDefaultNarrativeQualityRequestConfig()
 })
 
+/**
+ * Creates fresh agreement and assessment default profiles with no schema-specific overrides.
+ */
 export const createDefaultNarrativeQualityConfig = (): NarrativeQualityConfig => ({
   agreementTopLevel: createDefaultNarrativeQualityProfile('agreement_top_level'),
   assessmentDefaults: {
@@ -407,6 +427,9 @@ export const createDefaultNarrativeQualityConfig = (): NarrativeQualityConfig =>
   assessments: {}
 })
 
+/**
+ * Upgrades legacy settings, normalizes profiles, and hydrates catalog assessments and questions with cloned defaults.
+ */
 export const normalizeNarrativeQualityConfig = (
   value: Record<string, JsonValue> | null | undefined,
   catalog: NarrativeQualityAssessmentTarget[] = []
@@ -470,9 +493,15 @@ export const normalizeNarrativeQualityConfig = (
   return config
 }
 
+/**
+ * Produces a detached JSON-compatible snapshot of a normalized narrative-quality configuration.
+ */
 export const toNarrativeQualityJson = (config: NarrativeQualityConfig): Record<string, JsonValue> =>
   JSON.parse(JSON.stringify(config)) as Record<string, JsonValue>
 
+/**
+ * Returns the enabled profile for an exact resolved target, or `null` when it is missing or disabled.
+ */
 export const resolveNarrativeQualityTargetConfig = (
   config: NarrativeQualityConfig,
   target: NarrativeQualityResolvedConfigKey
@@ -515,6 +544,9 @@ const resolveAgreementTextareaTarget = (
     : []
 }
 
+/**
+ * Resolves a review-alignment textarea only when both narrative text and assessment schema are present.
+ */
 const resolveAssessmentReviewAlignmentTextareaTarget = (
   textarea: Record<string, unknown>,
   textareaLocale: NarrativeQualityLocale,
@@ -537,6 +569,9 @@ const resolveAssessmentReviewAlignmentTextareaTarget = (
     : []
 }
 
+/**
+ * Resolves a question-comment textarea only when its text and full assessment question path are present.
+ */
 const resolveAssessmentQuestionCommentTextareaTarget = (
   textarea: Record<string, unknown>,
   textareaLocale: NarrativeQualityLocale,
@@ -573,6 +608,9 @@ const resolveAssessmentQuestionCommentTextareaTarget = (
   }]
 }
 
+/**
+ * Dispatches a normalized textarea context to its supported narrative target shape.
+ */
 const resolveTextareaNarrativeQualityTargets = (
   textarea: Record<string, unknown>,
   locale: NarrativeQualityLocale
@@ -597,6 +635,9 @@ const resolveTextareaNarrativeQualityTargets = (
   return []
 }
 
+/**
+ * Extracts non-empty English and French agreement descriptions as independent scoring targets.
+ */
 const resolveAgreementNarrativeQualityTargets = (
   agreement: Record<string, unknown>
 ): NarrativeQualityTarget[] => {
@@ -620,6 +661,9 @@ const resolveAgreementNarrativeQualityTargets = (
   return targets.filter(target => target.text.length > 0)
 }
 
+/**
+ * Resolves a review-alignment response into one target when its narrative is non-empty.
+ */
 const resolveAssessmentResponseNarrativeQualityTargets = (
   assessmentSchemaId: string,
   assessmentResponse: Record<string, unknown>,
@@ -641,6 +685,9 @@ const resolveAssessmentResponseNarrativeQualityTargets = (
     : []
 }
 
+/**
+ * Resolves a question comment only when its schema and complete question path are present.
+ */
 const resolveQuestionCommentNarrativeQualityTargets = (
   context: Record<string, unknown>,
   assessmentSchemaId: string,
@@ -672,6 +719,9 @@ const resolveQuestionCommentNarrativeQualityTargets = (
   }]
 }
 
+/**
+ * Resolves scorer targets using textarea, agreement, assessment-response, then question-comment context precedence.
+ */
 export const resolveNarrativeQualityTargets = (
   context: Record<string, unknown>,
   activeLocale: string

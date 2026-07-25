@@ -142,6 +142,24 @@ watch(catalogItems, items => {
   syncSelectionState(items)
 }, { immediate: true, deep: true })
 
+const serializeConfig = (value: Record<string, JsonValue>) => JSON.stringify(value)
+
+const syncStateFromModel = () => {
+  const currentValue = toNarrativeQualityJson(state.value)
+  if (serializeConfig(model.value) === serializeConfig(currentValue)) {
+    return
+  }
+
+  const normalizedValue = normalizeNarrativeQualityConfig(model.value, catalogItems.value)
+  if (serializeConfig(toNarrativeQualityJson(normalizedValue)) === serializeConfig(currentValue)) {
+    return
+  }
+
+  state.value = normalizedValue
+}
+
+watch(model, syncStateFromModel, { deep: true })
+
 watch(state, value => {
   model.value = toNarrativeQualityJson(value)
 }, { deep: true })
@@ -205,10 +223,6 @@ const currentProfile = computed<NarrativeQualityProfile | null>(() => {
   return getAssessmentProfile(selectedCommentSchemaId.value, 'questionComments', selectedQuestionKey.value)
 })
 
-const currentProfileModel = computed<Record<string, unknown> | null>(() =>
-  currentProfile.value ? currentProfile.value as unknown as Record<string, unknown> : null
-)
-
 const canEditSelectedTarget = computed(() => {
   if (activeTarget.value === 'agreement_top_level') {
     return true
@@ -250,7 +264,7 @@ const showCatalogError = computed(() =>
   && Boolean(catalogError.value)
 )
 
-const handleProfileUpdate = (value: Record<string, unknown>) => {
+const handleProfileUpdate = (value: object) => {
   if (!currentProfile.value) {
     return
   }
@@ -370,7 +384,7 @@ const handleCurrentProfileEnabledUpdate = (value: boolean | string) => {
 
     <NarrativeQualityConfigRenderer
       v-if="canEditSelectedTarget && currentProfile"
-      :model="currentProfileModel || {}"
+      :model="currentProfile"
       :schema="configSchema"
       @update:model="handleProfileUpdate" />
   </div>

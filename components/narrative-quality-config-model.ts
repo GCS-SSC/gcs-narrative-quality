@@ -7,36 +7,40 @@ const getPathSegments = (path: string) => path.split('.').filter(segment => segm
 /**
  * Reads a dot-delimited model path without traversing through nullish or primitive values.
  */
-const getModelValue = (model: Record<string, unknown>, path: string) =>
+const getModelValue = (model: object, path: string) =>
   getPathSegments(path).reduce<unknown>((current, segment) => {
     if (typeof current !== 'object' || current === null) {
       return undefined
     }
 
-    return (current as Record<string, unknown>)[segment]
+    return Reflect.get(current, segment)
   }, model)
 
 const isPlainRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value)
 
+const setProperty = (target: object, key: string, value: unknown) => {
+  if (!Reflect.set(target, key, value)) {
+    throw new TypeError(`Cannot assign model property "${key}"`)
+  }
+}
+
 /**
  * Mutates a dot-delimited model path, creating object containers and ignoring an empty path.
  */
-export const setModelValue = (model: Record<string, unknown>, path: string, value: unknown) => {
+export const setModelValue = (model: object, path: string, value: unknown) => {
   const segments = getPathSegments(path)
   if (segments.length === 0) {
     return
   }
 
-  let current: Record<string, unknown> = model
+  let current = model
 
   for (const segment of segments.slice(0, -1)) {
-    const nextValue = current[segment]
-    if (typeof nextValue !== 'object' || nextValue === null || Array.isArray(nextValue)) {
-      current[segment] = {}
-    }
-
-    current = current[segment] as Record<string, unknown>
+    const nextValue = Reflect.get(current, segment)
+    const nextModel = isPlainRecord(nextValue) ? { ...nextValue } : {}
+    setProperty(current, segment, nextModel)
+    current = nextModel
   }
 
   const finalSegment = segments[segments.length - 1]
@@ -44,7 +48,7 @@ export const setModelValue = (model: Record<string, unknown>, path: string, valu
     return
   }
 
-  current[finalSegment] = value
+  setProperty(current, finalSegment, value)
 }
 
 const shouldMergeRecordDefaults = (existingValue: unknown, nestedValue: unknown): existingValue is Record<string, unknown> =>

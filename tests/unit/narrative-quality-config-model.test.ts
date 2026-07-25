@@ -197,11 +197,60 @@ describe('narrative quality config model defaults', () => {
         enabled: true
       }
     }
+    const originalRequest = model.request
 
     setModelValue(model, 'request.threshold.minimum', 70)
 
+    expect(model.request).not.toBe(originalRequest)
+    expect(originalRequest).toEqual({
+      enabled: true
+    })
     expect(getPluginModelValue(model, 'request.enabled')).toBe(true)
     expect(getPluginModelValue(model, 'request.threshold.minimum')).toBe(70)
     expect(getPluginModelValue(model, 'request.threshold.maximum')).toBeUndefined()
+  })
+
+  it('accepts closed domain models without requiring an index signature', () => {
+    interface Profile {
+      enabled: boolean
+      request: {
+        threshold: number
+      }
+    }
+
+    const profile: Profile = {
+      enabled: true,
+      request: {
+        threshold: 45
+      }
+    }
+
+    expect(getPluginModelValue(profile, 'request.threshold')).toBe(45)
+
+    setModelValue(profile, 'request.threshold', 70)
+
+    expect(profile.request.threshold).toBe(70)
+  })
+
+  it('throws when a final model property is not writable', () => {
+    const model = {}
+    Object.defineProperty(model, 'enabled', {
+      value: false,
+      writable: false
+    })
+
+    expect(() => setModelValue(model, 'enabled', true)).toThrow(TypeError)
+    expect(getPluginModelValue(model, 'enabled')).toBe(false)
+  })
+
+  it('throws when an intermediate object cannot be created', () => {
+    const model = {}
+    Object.defineProperty(model, 'request', {
+      value: {},
+      writable: false
+    })
+
+    expect(() => setModelValue(model, 'request.threshold.minimum', 70)).toThrow(TypeError)
+    expect(getPluginModelValue(model, 'request.threshold')).toBeUndefined()
   })
 })

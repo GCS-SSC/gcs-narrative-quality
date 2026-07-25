@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { nanoid } from 'nanoid'
-import { computed, watch } from 'vue'
+import { computed, toRaw, watch } from 'vue'
 import {
   ExtensionAssessmentSchemaAccordionSection,
   ExtensionButton,
@@ -21,24 +21,25 @@ import {
   mergePluginUiDefaults,
   setModelValue
 } from './narrative-quality-config-model'
-
-type CollectionRow = Record<string, unknown> & {
-  __renderKey?: string
-}
+import type {
+  NarrativeQualityCriterion,
+  NarrativeQualityProfile
+} from './narrative-quality'
 
 const {
   schema = { type: 'stack', children: [] } as NarrativeQualityPluginUiNode,
-  model = {}
+  model
 } = defineProps<{
   schema?: NarrativeQualityPluginUiNode
-  model?: Record<string, unknown>
+  model: NarrativeQualityProfile | NarrativeQualityCriterion
 }>()
 
 const emit = defineEmits<{
-  'update:model': [value: Record<string, unknown>]
+  'update:model': [value: object]
 }>()
 
 const { locale, t } = useExtensionI18n()
+const collectionItemKeys = new WeakMap<NarrativeQualityCriterion, string>()
 
 const fieldValue = computed(() => {
   if (!schema.key) {
@@ -48,13 +49,20 @@ const fieldValue = computed(() => {
   return getPluginModelValue(model, schema.key)
 })
 
-const collectionItems = computed<Record<string, unknown>[]>(() => {
+const isCriterion = (value: unknown): value is NarrativeQualityCriterion =>
+  typeof value === 'object'
+  && value !== null
+  && !Array.isArray(value)
+  && typeof Reflect.get(value, 'label') === 'string'
+  && typeof Reflect.get(value, 'weight') === 'number'
+
+const collectionItems = computed<NarrativeQualityCriterion[]>(() => {
   if (!schema.key) {
     return []
   }
 
   const value = getPluginModelValue(model, schema.key)
-  return Array.isArray(value) ? value as Record<string, unknown>[] : []
+  return Array.isArray(value) && value.every(isCriterion) ? value : []
 })
 
 const getText = (value?: NarrativeQualityPluginLabel) => {
@@ -85,41 +93,38 @@ const getDisplayText = (value: unknown) => {
     && typeof value.en === 'string'
     && typeof value.fr === 'string'
   ) {
-    return getText(value as NarrativeQualityPluginLabel)
+    return locale.value === 'fr' ? value.fr : value.en
   }
 
   return ''
 }
 
-const updateCurrentModel = (updater: (draft: Record<string, unknown>) => void) => {
+const updateCurrentModel = (updater: (draft: object) => void) => {
   const nextModel = { ...model }
   updater(nextModel)
   emit('update:model', nextModel)
 }
 
-const ensureCollectionItemKey = (row: Record<string, unknown>) => {
-  const typedRow = row as CollectionRow
-
-  if (typeof typedRow.__renderKey === 'string' && typedRow.__renderKey.length > 0) {
-    return typedRow.__renderKey
+const ensureCollectionItemKey = (row: NarrativeQualityCriterion) => {
+  const rawRow = toRaw(row)
+  const existingKey = collectionItemKeys.get(rawRow)
+  if (existingKey) {
+    return existingKey
   }
 
-  Object.defineProperty(typedRow, '__renderKey', {
-    value: nanoid(),
-    enumerable: false,
-    configurable: true
-  })
-
-  return typedRow.__renderKey as string
+  const renderKey = nanoid()
+  collectionItemKeys.set(rawRow, renderKey)
+  return renderKey
 }
 
-const replaceCollectionItems = (items: Record<string, unknown>[]) => {
-  if (!schema.key) {
+const replaceCollectionItems = (items: NarrativeQualityCriterion[]) => {
+  const modelPath = schema.key
+  if (!modelPath) {
     return
   }
 
   updateCurrentModel(nextModel => {
-    setModelValue(nextModel, schema.key as string, items)
+    setModelValue(nextModel, modelPath, items)
   })
 }
 
@@ -127,7 +132,10 @@ const addCollectionItem = () => {
   const nextItem = mergePluginUiDefaults(
     schema.item_schema,
     undefined
-  ) as Record<string, unknown>
+  )
+  if (!isCriterion(nextItem)) {
+    return
+  }
 
   ensureCollectionItemKey(nextItem)
   replaceCollectionItems([...collectionItems.value, nextItem])
@@ -137,21 +145,16 @@ const addCollectionItem = () => {
  * Replaces a collection row only with an object value while preserving its stable render key.
  */
 const updateCollectionItem = (index: number, value: unknown) => {
-  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+  if (!isCriterion(value)) {
     return
   }
 
   const nextItems = [...collectionItems.value]
-  const nextItem = value as Record<string, unknown>
+  const nextItem = value
   const existingItem = nextItems[index]
 
   if (existingItem) {
-    const existingKey = ensureCollectionItemKey(existingItem)
-    Object.defineProperty(nextItem as CollectionRow, '__renderKey', {
-      value: existingKey,
-      enumerable: false,
-      configurable: true
-    })
+    collectionItemKeys.set(toRaw(nextItem), ensureCollectionItemKey(existingItem))
   }
 
   nextItems.splice(index, 1, nextItem)
@@ -164,7 +167,7 @@ const removeCollectionItem = (index: number) => {
   replaceCollectionItems(nextItems)
 }
 
-const getCollectionItemTitle = (row: Record<string, unknown>, index: number) => {
+const getCollectionItemTitle = (row: NarrativeQualityCriterion, index: number) => {
   const itemTitle = typeof schema.item_title_key === 'string' && schema.item_title_key.length > 0
     ? getDisplayText(getPluginModelValue(row, schema.item_title_key))
     : ''
@@ -178,12 +181,13 @@ const getCollectionItemTitle = (row: Record<string, unknown>, index: number) => 
 }
 
 const updateField = (value: unknown) => {
-  if (!schema.key) {
+  const modelPath = schema.key
+  if (!modelPath) {
     return
   }
 
   updateCurrentModel(nextModel => {
-    setModelValue(nextModel, schema.key as string, value)
+    setModelValue(nextModel, modelPath, value)
   })
 }
 

@@ -142,6 +142,28 @@ describe('gcs narrative quality extension', () => {
     expect(toNarrativeQualityJson(config)).toEqual(config)
   })
 
+  it.each(['always', 'adaptive', 'never'] as const)(
+    'preserves the %s refinement policy from persisted profile configuration',
+    (adaptiveRefinementPolicy) => {
+      const config = normalizeNarrativeQualityConfig({
+        agreementTopLevel: {
+          request_config: {
+            adaptiveRefinementPolicy
+          }
+        }
+      })
+
+      expect(config.agreementTopLevel.request_config.adaptiveRefinementPolicy)
+        .toBe(adaptiveRefinementPolicy)
+      expect(toNarrativeQualityJson(config).agreementTopLevel)
+        .toMatchObject({
+          request_config: {
+            adaptiveRefinementPolicy
+          }
+        })
+    }
+  )
+
   it('keeps legacy config compatible by seeding discovered assessments and questions from the old target buckets', () => {
     const config = normalizeNarrativeQualityConfig({
       targets: {

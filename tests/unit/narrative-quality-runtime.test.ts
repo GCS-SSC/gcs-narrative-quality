@@ -202,4 +202,19 @@ describe('narrative quality runtime asset URLs', () => {
       }
     })
   })
+
+  it.each(['always', 'adaptive', 'never'] as const)(
+    'preserves the %s refinement policy in worker request configuration',
+    async (adaptiveRefinementPolicy) => {
+      const { resolveQualityMeterRequestConfig } = await importRuntime()
+
+      expect(resolveQualityMeterRequestConfig({
+        request_config: {
+          adaptiveRefinementPolicy
+        }
+      })).toEqual({
+        adaptiveRefinementPolicy
+      })
+    }
+  )
 })

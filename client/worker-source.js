@@ -1,6 +1,5 @@
 import { env as transformersEnv } from '@huggingface/transformers'
 import {
-  DEFAULT_ADAPTIVE_REFINEMENT_CONFIG,
   createTransformersQualityScorer,
   decideQualityRefinement
 } from './core.ts'
@@ -156,9 +155,7 @@ export const scorePayload = async (payload, requestId) => {
       question,
       response: text,
       criteria,
-      requestConfig,
-      policy: 'adaptive',
-      config: DEFAULT_ADAPTIVE_REFINEMENT_CONFIG
+      requestConfig
     })
 
     if (!refinement || !refinement.shouldRunFullPass) {

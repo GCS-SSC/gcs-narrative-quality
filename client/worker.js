@@ -35368,9 +35368,7 @@ var scorePayload = async (payload, requestId) => {
       question,
       response: text,
       criteria,
-      requestConfig,
-      policy: "adaptive",
-      config: DEFAULT_ADAPTIVE_REFINEMENT_CONFIG
+      requestConfig
     });
     if (!refinement || !refinement.shouldRunFullPass) {
       return createQualityMeterRuntimeResult(fastResult, "fast", refinement);

@@ -371,7 +371,7 @@ export const buildNarrativeQualityQuestionKey = (
 /**
  * Creates fresh adaptive-refinement thresholds and score-band presentation defaults.
  */
-export const createDefaultNarrativeQualityRequestConfig = (): NarrativeQualityRequestConfig => ({
+const createDefaultNarrativeQualityRequestConfig = (): NarrativeQualityRequestConfig => ({
   adaptiveRefinementPolicy: 'adaptive',
   adaptiveRefinement: {
     lowStopOverallPercent: 10,
@@ -401,7 +401,7 @@ export const createDefaultNarrativeQualityRequestConfig = (): NarrativeQualityRe
 /**
  * Creates a disabled target profile with cloned bilingual criteria and fresh request settings.
  */
-export const createDefaultNarrativeQualityProfile = (
+const createDefaultNarrativeQualityProfile = (
   targetKey: NarrativeQualityTargetKey
 ): NarrativeQualityProfile => ({
   enabled: false,

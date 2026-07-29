@@ -2,7 +2,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createQueryChain } from './helpers/mock-db'
 
 const resolveExtensionStreamContextMock = vi.fn()
-const authorizeWithTeamMock = vi.fn()
 type RouteHandler = (event: { context: { $db: unknown } }) => Promise<unknown>
 type RouteResponse = {
   items?: unknown[]
@@ -17,8 +16,6 @@ describe('gcs narrative quality assessment targets route', () => {
   beforeEach(() => {
     vi.resetModules()
     vi.clearAllMocks()
-    authorizeWithTeamMock.mockResolvedValue(true)
-
     resolveExtensionStreamContextMock.mockResolvedValue({
       agencyId: 'agency-1',
       profileId: 'tp-1',
@@ -140,8 +137,7 @@ describe('gcs narrative quality assessment targets route', () => {
         $authContext: {
           userId: 'user-1',
           userAbilities: {
-            authorize: vi.fn(() => true),
-            authorizeWithTeam: authorizeWithTeamMock
+            authorize: vi.fn(() => true)
           }
         }
       }
@@ -201,8 +197,7 @@ describe('gcs narrative quality assessment targets route', () => {
         $authContext: {
           userId: 'user-1',
           userAbilities: {
-            authorize: vi.fn(() => true),
-            authorizeWithTeam: authorizeWithTeamMock
+            authorize: vi.fn(() => true)
           }
         }
       },
@@ -245,8 +240,7 @@ describe('gcs narrative quality assessment targets route', () => {
         $authContext: {
           userId: 'user-1',
           userAbilities: {
-            authorize: vi.fn(() => true),
-            authorizeWithTeam: authorizeWithTeamMock
+            authorize: vi.fn(() => true)
           }
         }
       }
@@ -279,8 +273,6 @@ describe('gcs narrative quality assessment targets route', () => {
   })
 
   it('returns forbidden when the authenticated user cannot read the stream', async () => {
-    authorizeWithTeamMock.mockResolvedValueOnce(false)
-
     const handler = (await import('../../server/api/extensions/gcs-narrative-quality/streams/[streamId]/assessment-targets.get')).default as RouteHandler
     const result = await handler({
       context: {
@@ -291,8 +283,7 @@ describe('gcs narrative quality assessment targets route', () => {
         $authContext: {
           userId: 'user-1',
           userAbilities: {
-            authorize: vi.fn(() => false),
-            authorizeWithTeam: authorizeWithTeamMock
+            authorize: vi.fn(() => false)
           }
         }
       },

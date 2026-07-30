@@ -86,17 +86,8 @@ export default defineGcsExtensionRouteHandler(async context => {
     return createExtensionRouteErrorResponse(context, 401, 'AUTH_UNAUTHORIZED', 'Unauthorized.')
   }
 
-  const canAccessWithTeam = await authContext.userAbilities.authorizeWithTeam(
-    'transfer_payment',
-    'read',
-    streamContext.scope,
-    authContext.userId,
-    true,
-    db
-  )
-
   const canAccessScope = authContext.userAbilities.authorize('transfer_payment', 'read', streamContext.scope)
-  if (!canAccessWithTeam && !canAccessScope) {
+  if (!canAccessScope) {
     return createExtensionRouteErrorResponse(context, 403, 'AUTH_FORBIDDEN', 'Forbidden.')
   }
 

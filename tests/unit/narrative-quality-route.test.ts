@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createQueryChain } from './helpers/mock-db'
 
 const resolveExtensionStreamContextMock = vi.fn()
-const authorizeWithTeamMock = vi.fn()
+const streamScope = { type: 'entity' as const, agencyId: 'agency-1', path: [] }
 type RouteHandler = (event: { context: { $db: unknown } }) => Promise<unknown>
 type RouteResponse = {
   items?: unknown[]
@@ -17,17 +17,16 @@ describe('gcs narrative quality assessment targets route', () => {
   beforeEach(() => {
     vi.resetModules()
     vi.clearAllMocks()
-    authorizeWithTeamMock.mockResolvedValue(true)
-
     resolveExtensionStreamContextMock.mockResolvedValue({
       agencyId: 'agency-1',
       profileId: 'tp-1',
       streamId: 'stream-1',
-      scope: { type: 'entity', agencyId: 'agency-1', path: [] }
+      scope: streamScope
     })
   })
 
   it('returns assessment schemas and question targets for the extension config modal', async () => {
+    const authorizeMock = vi.fn(() => true)
     const assessmentSetsQuery = createQueryChain({
       executeResult: [
         { id: 'set-1' },
@@ -140,8 +139,7 @@ describe('gcs narrative quality assessment targets route', () => {
         $authContext: {
           userId: 'user-1',
           userAbilities: {
-            authorize: vi.fn(() => true),
-            authorizeWithTeam: authorizeWithTeamMock
+            authorize: authorizeMock
           }
         }
       }
@@ -165,6 +163,7 @@ describe('gcs narrative quality assessment targets route', () => {
         }
       }]
     }])
+    expect(authorizeMock).toHaveBeenCalledWith('transfer_payment', 'read', streamScope)
   })
 
   it('returns badRequest when the stream id is missing', async () => {
@@ -189,6 +188,7 @@ describe('gcs narrative quality assessment targets route', () => {
   })
 
   it('returns notFound when the stream context is missing', async () => {
+    const authorizeMock = vi.fn(() => true)
     resolveExtensionStreamContextMock.mockResolvedValueOnce(null)
 
     const handler = (await import('../../server/api/extensions/gcs-narrative-quality/streams/[streamId]/assessment-targets.get')).default as RouteHandler
@@ -201,8 +201,7 @@ describe('gcs narrative quality assessment targets route', () => {
         $authContext: {
           userId: 'user-1',
           userAbilities: {
-            authorize: vi.fn(() => true),
-            authorizeWithTeam: authorizeWithTeamMock
+            authorize: authorizeMock
           }
         }
       },
@@ -218,9 +217,11 @@ describe('gcs narrative quality assessment targets route', () => {
 
     expect(result.statusCode).toBe(404)
     expect(result.data.code).toBe('TRANSFER_PAYMENT_STREAM_NOT_FOUND')
+    expect(authorizeMock).not.toHaveBeenCalled()
   })
 
   it('returns assessment schemas without requiring extension enablement rows', async () => {
+    const authorizeMock = vi.fn(() => true)
     const assessmentSetsQuery = createQueryChain({
       executeResult: []
     })
@@ -245,14 +246,14 @@ describe('gcs narrative quality assessment targets route', () => {
         $authContext: {
           userId: 'user-1',
           userAbilities: {
-            authorize: vi.fn(() => true),
-            authorizeWithTeam: authorizeWithTeamMock
+            authorize: authorizeMock
           }
         }
       }
     }) as RouteResponse
 
     expect(result.items).toEqual([])
+    expect(authorizeMock).toHaveBeenCalledWith('transfer_payment', 'read', streamScope)
   })
 
   it('returns unauthorized when the authenticated dispatcher context is missing', async () => {
@@ -279,8 +280,7 @@ describe('gcs narrative quality assessment targets route', () => {
   })
 
   it('returns forbidden when the authenticated user cannot read the stream', async () => {
-    authorizeWithTeamMock.mockResolvedValueOnce(false)
-
+    const authorizeMock = vi.fn(() => false)
     const handler = (await import('../../server/api/extensions/gcs-narrative-quality/streams/[streamId]/assessment-targets.get')).default as RouteHandler
     const result = await handler({
       context: {
@@ -291,8 +291,7 @@ describe('gcs narrative quality assessment targets route', () => {
         $authContext: {
           userId: 'user-1',
           userAbilities: {
-            authorize: vi.fn(() => false),
-            authorizeWithTeam: authorizeWithTeamMock
+            authorize: authorizeMock
           }
         }
       },
@@ -308,5 +307,6 @@ describe('gcs narrative quality assessment targets route', () => {
 
     expect(result.statusCode).toBe(403)
     expect(result.data.code).toBe('AUTH_FORBIDDEN')
+    expect(authorizeMock).toHaveBeenCalledWith('transfer_payment', 'read', streamScope)
   })
 })

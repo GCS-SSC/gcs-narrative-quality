@@ -41,8 +41,8 @@ describe('NarrativeQualitySlot', () => {
     let onMessage: ((event: WorkerMessageEvent) => void) | null = null
 
     class WorkerStub {
-      addEventListener(_type: string, handler: (event: WorkerMessageEvent) => void) {
-        onMessage = handler
+      addEventListener(type: string, handler: (event: WorkerMessageEvent) => void) {
+        if (type === 'message') onMessage = handler
       }
 
       postMessage(payload: unknown) {
@@ -345,5 +345,57 @@ describe('NarrativeQualitySlot', () => {
     ])
 
     wrappers.forEach(wrapper => wrapper.unmount())
+  })
+
+  it('surfaces a shared worker runtime failure and resets the failed worker', async () => {
+    const listeners = new Map<string, () => void>()
+    const terminateMock = vi.fn()
+    class WorkerStub {
+      addEventListener(type: string, handler: () => void) {
+        listeners.set(type, handler)
+      }
+
+      postMessage() {}
+
+      terminate() {
+        terminateMock()
+      }
+    }
+    vi.stubGlobal('Worker', WorkerStub)
+    const wrapper = mount(NarrativeQualitySlot, {
+      global: { stubs: { UProgress: progressStub, UBadge: badgeStub } },
+      props: {
+        config: {
+          assessments: {
+            'schema-1': {
+              questionComments: {
+                [buildNarrativeQualityQuestionKey('section-a', 'sub-a', 'question-a')]: { enabled: true }
+              }
+            }
+          }
+        },
+        context: {
+          textarea: {
+            kind: 'assessment.questionComment',
+            locale: 'en',
+            label: 'Evidence',
+            text: 'Some evidence',
+            assessmentSchemaId: 'schema-1',
+            sectionName: 'section-a',
+            subSectionName: 'sub-a',
+            questionName: 'question-a'
+          }
+        }
+      }
+    })
+    vi.advanceTimersByTime(500)
+    await flushPromises()
+
+    listeners.get('error')?.()
+    await flushPromises()
+
+    expect(terminateMock).toHaveBeenCalledOnce()
+    expect(wrapper.text()).toContain('Quality meter unavailable')
+    expect((globalThis as any)[sharedWorkerStateKey].worker).toBeNull()
   })
 })

@@ -64,13 +64,24 @@ const getSharedWorkerState = (): SharedWorkerState => {
 const getSharedWorker = () => {
   const state = getSharedWorkerState()
   if (!state.worker) {
-    state.worker = new Worker('/extensions/gcs-narrative-quality/client/worker.js', { type: 'module' })
-    state.worker.addEventListener('message', event => {
+    const worker = new Worker('/extensions/gcs-narrative-quality/client/worker.js', { type: 'module' })
+    state.worker = worker
+    worker.addEventListener('message', event => {
       const message = event.data as WorkerMessage
       for (const listener of state.listeners) {
         listener(message)
       }
     })
+    const handleWorkerFailure = () => {
+      if (state.worker !== worker) return
+      state.worker = null
+      worker.terminate()
+      for (const listener of state.listeners) {
+        listener({ kind: 'error' })
+      }
+    }
+    worker.addEventListener('error', handleWorkerFailure)
+    worker.addEventListener('messageerror', handleWorkerFailure)
   }
 
   return state.worker
@@ -159,6 +170,13 @@ const toneClasses = (tone: QualityMeterResult['tone']) => {
  */
 const handleWorkerMessage = (message: WorkerMessage) => {
   const requestId = typeof message.requestId === 'number' ? message.requestId : 0
+  if (message.kind === 'error' && requestId === 0) {
+    errorByKey.value = Object.fromEntries(enabledTargets.value.map(target => [
+      target.key,
+      text('unavailable')
+    ]))
+    return
+  }
   const targetKey = requestKeyById.value[requestId]
   if (!targetKey) {
     return
@@ -170,7 +188,7 @@ const handleWorkerMessage = (message: WorkerMessage) => {
   if (message.kind === 'error') {
     errorByKey.value = {
       ...errorByKey.value,
-      [targetKey]: message.error || text('unavailable')
+      [targetKey]: text('unavailable')
     }
     return
   }
@@ -210,16 +228,23 @@ const scheduleScoreRequest = (target: NarrativeQualityTarget & { settings: unkno
         Object.entries(pendingScoreTimers.value).filter(([key]) => key !== target.key)
       )
 
-      getSharedWorker().postMessage({
-        type: 'score',
-        requestId,
-        payload: {
-          groupKey: target.key,
-          text: target.text,
-          locale: target.locale,
-          settings: target.settings
+      try {
+        getSharedWorker().postMessage({
+          type: 'score',
+          requestId,
+          payload: {
+            groupKey: target.key,
+            text: target.text,
+            locale: target.locale,
+            settings: target.settings
+          }
+        })
+      } catch {
+        errorByKey.value = {
+          ...errorByKey.value,
+          [target.key]: text('unavailable')
         }
-      })
+      }
     }, SCORE_REQUEST_DEBOUNCE_MS)
   }
 }

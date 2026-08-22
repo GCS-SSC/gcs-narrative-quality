@@ -18,7 +18,7 @@ interface AssessmentSchemaRow extends ReviewSchemaContentSource {
   id: unknown
   egcs_cn_name_en: string
   egcs_cn_name_fr: string
-  egcs_cn_version: unknown
+  publicationVersion: unknown
 }
 
 interface AssessmentQueryBuilder {
@@ -109,20 +109,20 @@ export default defineGcsExtensionRouteHandler(async context => {
   const rows = await db
     .selectFrom('Common_Review_Setup')
     .innerJoin('Common_Review_Schema', 'Common_Review_Schema.id', 'Common_Review_Setup.egcs_cn_reviewschema')
+    .innerJoin('Common_Publication', 'Common_Publication.id', 'Common_Review_Schema.id')
+    .innerJoin('Common_Publication_Version', 'Common_Publication_Version.id', 'Common_Publication.egcs_cn_currentversion')
     .select([
       'Common_Review_Schema.id as id',
       'Common_Review_Schema.egcs_cn_name_en as egcs_cn_name_en',
       'Common_Review_Schema.egcs_cn_name_fr as egcs_cn_name_fr',
-      'Common_Review_Schema.egcs_cn_version as egcs_cn_version',
-      'Common_Review_Schema.egcs_cn_scoringmatrix as egcs_cn_scoringmatrix',
-      'Common_Review_Schema.egcs_cn_assessmentschema as egcs_cn_assessmentschema',
-      'Common_Review_Schema.egcs_cn_publishedscoringmatrix as egcs_cn_publishedscoringmatrix',
-      'Common_Review_Schema.egcs_cn_publishedassessmentschema as egcs_cn_publishedassessmentschema'
+      'Common_Publication_Version.egcs_cn_version as publicationVersion',
+      'Common_Publication_Version.egcs_cn_definition as definition'
     ])
     .where('Common_Review_Setup.egcs_cn_reviewset', 'in', assessmentSetIds)
     .where('Common_Review_Setup._deleted', '=', false)
     .where('Common_Review_Schema._deleted', '=', false)
     .where('Common_Review_Schema.egcs_cn_reviewtype', '=', 'assessment')
+    .where('Common_Publication.egcs_cn_state', '=', 'published')
     .orderBy('Common_Review_Schema.egcs_cn_name_en', 'asc')
     .orderBy('Common_Review_Schema.id', 'asc')
     .execute() as AssessmentSchemaRow[]
@@ -148,7 +148,7 @@ export default defineGcsExtensionRouteHandler(async context => {
 
     return {
       schemaId: String(row.id),
-      version: Number(row.egcs_cn_version),
+      version: Number(row.publicationVersion),
       name: {
         en: row.egcs_cn_name_en,
         fr: row.egcs_cn_name_fr

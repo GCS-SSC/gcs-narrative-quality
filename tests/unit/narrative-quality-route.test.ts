@@ -40,9 +40,10 @@ describe('gcs narrative quality assessment targets route', () => {
           id: 'schema-1',
           egcs_cn_name_en: 'Program Fit',
           egcs_cn_name_fr: 'Concordance au programme',
-          egcs_cn_version: 2,
-          egcs_cn_scoringmatrix: null,
-          egcs_cn_assessmentschema: {
+          publicationVersion: 2,
+          definition: {
+            scoringMatrix: null,
+            assessmentSchema: {
             sections: [{
               name: 'section-a',
               label: { en: 'Section A', fr: 'Section A' },
@@ -70,18 +71,18 @@ describe('gcs narrative quality assessment targets route', () => {
               }]
             }],
             sectionMatrix: [],
-            outcomes: []
-          },
-          egcs_cn_publishedscoringmatrix: null,
-          egcs_cn_publishedassessmentschema: null
+              outcomes: []
+            }
+          }
         },
         {
           id: 'schema-1',
           egcs_cn_name_en: 'Program Fit',
           egcs_cn_name_fr: 'Concordance au programme',
-          egcs_cn_version: 2,
-          egcs_cn_scoringmatrix: null,
-          egcs_cn_assessmentschema: {
+          publicationVersion: 2,
+          definition: {
+            scoringMatrix: null,
+            assessmentSchema: {
             sections: [{
               name: 'section-a',
               label: { en: 'Section A', fr: 'Section A' },
@@ -107,10 +108,16 @@ describe('gcs narrative quality assessment targets route', () => {
               }]
             }],
             sectionMatrix: [],
-            outcomes: []
-          },
-          egcs_cn_publishedscoringmatrix: null,
-          egcs_cn_publishedassessmentschema: null
+              outcomes: []
+            }
+          }
+        },
+        {
+          id: 'schema-malformed',
+          egcs_cn_name_en: 'Malformed schema',
+          egcs_cn_name_fr: 'Schéma malformé',
+          publicationVersion: 1,
+          definition: { assessmentSchema: ['invalid'] }
         }
       ]
     })
@@ -162,6 +169,11 @@ describe('gcs narrative quality assessment targets route', () => {
           fr: 'Decrivez la preuve'
         }
       }]
+    }, {
+      schemaId: 'schema-malformed',
+      version: 1,
+      name: { en: 'Malformed schema', fr: 'Schéma malformé' },
+      questions: []
     }])
     expect(authorizeMock).toHaveBeenCalledWith('transfer_payment', 'read', streamScope)
   })

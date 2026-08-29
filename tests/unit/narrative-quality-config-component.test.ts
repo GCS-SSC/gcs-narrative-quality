@@ -283,6 +283,81 @@ describe('NarrativeQualityConfig', () => {
     })
   })
 
+  it.each([
+    ['numeric input', 7.25, 7.25],
+    ['numeric string', '4.5', 4.5],
+    ['invalid string', 'not-a-number', 0]
+  ] as const)('normalizes %s through the actual number control', async (_label, input, expected) => {
+    const locale = ref('en')
+    vi.stubGlobal('useI18n', () => ({ locale }))
+    const original: NarrativeQualityCriterion = {
+      label: 'Preserved criterion',
+      weight: 2
+    }
+    const schema: NarrativeQualityPluginUiNode = {
+      type: 'number',
+      key: 'weight',
+      min: 0.1,
+      max: 10,
+      step: 0.1
+    }
+    const InputStub = defineComponent({
+      name: 'UInput',
+      props: ['modelValue', 'type', 'min', 'max', 'step'],
+      emits: ['update:modelValue'],
+      template: '<input :value="modelValue" :type="type" @input="$emit(\'update:modelValue\', $event.target.value)" />'
+    })
+    const wrapper = mount(NarrativeQualityConfigRenderer, {
+      props: { model: original, schema },
+      global: {
+        stubs: {
+          UFormField: { template: '<label><slot /></label>' },
+          UInput: InputStub
+        }
+      }
+    })
+
+    if (typeof input === 'number') {
+      wrapper.getComponent(InputStub).vm.$emit('update:modelValue', input)
+      await wrapper.vm.$nextTick()
+    } else {
+      await wrapper.find('input').setValue(input)
+    }
+
+    const emitted = wrapper.emitted('update:model')?.at(-1)?.[0] as NarrativeQualityCriterion
+    expect(emitted).toEqual({ label: 'Preserved criterion', weight: expected })
+    expect(emitted).not.toBe(original)
+    expect(original).toEqual({ label: 'Preserved criterion', weight: 2 })
+  })
+
+  it('keeps non-number field controls on their existing update path', async () => {
+    const locale = ref('en')
+    vi.stubGlobal('useI18n', () => ({ locale }))
+    const original: NarrativeQualityCriterion = { label: 'Original criterion', weight: 2 }
+    const schema: NarrativeQualityPluginUiNode = { type: 'input', key: 'label' }
+    const wrapper = mount(NarrativeQualityConfigRenderer, {
+      props: { model: original, schema },
+      global: {
+        stubs: {
+          UFormField: { template: '<label><slot /></label>' },
+          UInput: {
+            props: ['modelValue'],
+            emits: ['update:modelValue'],
+            template: '<input :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" />'
+          }
+        }
+      }
+    })
+
+    await wrapper.find('input').setValue('Updated criterion')
+
+    expect(wrapper.emitted('update:model')?.at(-1)?.[0]).toEqual({
+      label: 'Updated criterion',
+      weight: 2
+    })
+    expect(original).toEqual({ label: 'Original criterion', weight: 2 })
+  })
+
   it('renders frozen criterion rows without mutating them for keys', () => {
     const locale = ref('en')
     vi.stubGlobal('useI18n', () => ({

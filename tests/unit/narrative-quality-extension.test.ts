@@ -268,6 +268,103 @@ describe('gcs narrative quality extension', () => {
     })).toBeNull()
   })
 
+  it('returns only explicitly enabled exact target profiles', () => {
+    const config = normalizeNarrativeQualityConfig({
+      agreementTopLevel: { enabled: true },
+      assessments: {
+        enabled: {
+          reviewAlignment: { enabled: true },
+          questionComments: { question: { enabled: true } }
+        },
+        disabled: {
+          reviewAlignment: { enabled: false },
+          questionComments: { question: { enabled: false } }
+        }
+      }
+    })
+
+    expect(resolveNarrativeQualityTargetConfig(config, { kind: 'agreement_top_level' }))
+      .toBe(config.agreementTopLevel)
+    expect(resolveNarrativeQualityTargetConfig(config, {
+      kind: 'assessment_review_alignment_narrative', schemaId: 'enabled'
+    })).toBe(config.assessments.enabled?.reviewAlignment)
+    expect(resolveNarrativeQualityTargetConfig(config, {
+      kind: 'assessment_review_alignment_narrative', schemaId: 'disabled'
+    })).toBeNull()
+    expect(resolveNarrativeQualityTargetConfig(config, {
+      kind: 'assessment_review_alignment_narrative', schemaId: 'missing'
+    })).toBeNull()
+    expect(resolveNarrativeQualityTargetConfig(config, {
+      kind: 'assessment_question_comment', schemaId: 'enabled', questionKey: 'question'
+    })).toBe(config.assessments.enabled?.questionComments.question)
+    expect(resolveNarrativeQualityTargetConfig(config, {
+      kind: 'assessment_question_comment', schemaId: 'disabled', questionKey: 'question'
+    })).toBeNull()
+    expect(resolveNarrativeQualityTargetConfig(config, {
+      kind: 'assessment_question_comment', schemaId: 'missing', questionKey: 'question'
+    })).toBeNull()
+  })
+
+  it('covers empty and fallback labels across every supported host context', () => {
+    expect(resolveNarrativeQualityTargets({ textarea: {
+      kind: 'agreement.description', locale: 'fr', text: ' Texte '
+    } }, 'en')).toEqual([expect.objectContaining({ locale: 'fr', label: 'Description française', text: 'Texte' })])
+    expect(resolveNarrativeQualityTargets({ textarea: {
+      kind: 'agreement.description', locale: 'invalid', text: 'Text'
+    } }, 'en')).toEqual([expect.objectContaining({ locale: 'en', label: 'English description' })])
+    expect(resolveNarrativeQualityTargets({ textarea: {
+      kind: 'agreement.description', text: '   '
+    } }, 'en')).toEqual([])
+    expect(resolveNarrativeQualityTargets({ textarea: {
+      kind: 'assessment.reviewAlignment', locale: 'fr', text: 'Texte', assessmentSchemaId: 'schema-1'
+    } }, 'en')).toEqual([expect.objectContaining({ label: 'Narratif d’examen' })])
+    expect(resolveNarrativeQualityTargets({ textarea: {
+      kind: 'assessment.reviewAlignment', text: 'Text'
+    } }, 'en')).toEqual([])
+    expect(resolveNarrativeQualityTargets({ textarea: {
+      kind: 'assessment.questionComment', locale: 'fr', text: 'Commentaire', assessmentSchemaId: 'schema-1',
+      sectionName: 'section', subSectionName: 'subsection', questionName: 'question'
+    } }, 'en')).toEqual([expect.objectContaining({ label: 'Commentaire' })])
+    for (const omitted of ['text', 'assessmentSchemaId', 'sectionName', 'subSectionName', 'questionName']) {
+      const textarea: Record<string, unknown> = {
+        kind: 'assessment.questionComment', text: 'Comment', assessmentSchemaId: 'schema-1',
+        sectionName: 'section', subSectionName: 'subsection', questionName: 'question'
+      }
+      delete textarea[omitted]
+      expect(resolveNarrativeQualityTargets({ textarea }, 'en')).toEqual([])
+    }
+    expect(resolveNarrativeQualityTargets({ textarea: { kind: 'unsupported', text: 'Text' } }, 'en')).toEqual([])
+
+    expect(resolveNarrativeQualityTargets({ agreement: {
+      egcs_fc_description_en: ' English ', egcs_fc_description_fr: ' Français '
+    } }, 'en')).toHaveLength(2)
+    expect(resolveNarrativeQualityTargets({ agreement: {} }, 'en')).toEqual([])
+    expect(resolveNarrativeQualityTargets({
+      assessment: { egcs_cn_reviewschema: 'schema-2' },
+      assessmentResponse: { egcs_cn_reviewalignmentnarrative: ' Aligné ' }
+    }, 'fr')).toEqual([expect.objectContaining({ locale: 'fr', label: 'Narratif d’examen', text: 'Aligné' })])
+    expect(resolveNarrativeQualityTargets({
+      assessmentSchemaId: 'schema-2', assessmentResponse: {}
+    }, 'en')).toEqual([])
+
+    const commentContext = {
+      comment: ' Useful ',
+      assessmentSchemaId: 'schema-3',
+      sectionName: 'section',
+      subSectionName: 'subsection',
+      question: { name: 'question', question: { fr: 'Question française' } }
+    }
+    expect(resolveNarrativeQualityTargets(commentContext, 'fr'))
+      .toEqual([expect.objectContaining({ label: 'Question française', text: 'Useful' })])
+    expect(resolveNarrativeQualityTargets({ ...commentContext, question: { name: 'question' } }, 'en'))
+      .toEqual([expect.objectContaining({ label: 'Comment' })])
+    for (const omitted of ['comment', 'assessmentSchemaId', 'sectionName', 'subSectionName', 'question']) {
+      const context: Record<string, unknown> = { ...commentContext }
+      delete context[omitted]
+      expect(resolveNarrativeQualityTargets(context, 'en')).toEqual([])
+    }
+  })
+
   it('rewrites old plugin asset URLs to extension public asset URLs', async () => {
     const workerSource = await readFile(resolve(extensionRoot, 'client/worker-source.js'), 'utf8')
     const bundledWorker = await readFile(resolve(extensionRoot, 'client/worker.js'), 'utf8')

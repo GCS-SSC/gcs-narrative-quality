@@ -6,15 +6,15 @@ const createTransformersQualityScorerMock = vi.fn()
 const resolveQualityMeterInputMock = vi.fn()
 const queueWorkerScoreRequestMock = vi.fn()
 const postMessageMock = vi.fn()
+const addEventListenerMock = vi.fn()
+const isWorkerScoreRequestSupersededErrorMock = vi.fn()
+const transformersEnvMock = {
+  backends: { onnx: { wasm: {} as Record<string, unknown> } },
+  fetch: undefined as unknown
+}
 
 vi.mock('@huggingface/transformers', () => ({
-  env: {
-    backends: {
-      onnx: {
-        wasm: {}
-      }
-    }
-  }
+  env: transformersEnvMock
 }))
 
 vi.mock('../../client/core.ts', async (importOriginal) => {
@@ -37,7 +37,7 @@ vi.mock('../../client/runtime.js', () => ({
 
 vi.mock('../../client/worker-request-queue.js', () => ({
   createWorkerScoreCacheKey: (input: unknown) => JSON.stringify(input),
-  isWorkerScoreRequestSupersededError: () => false,
+  isWorkerScoreRequestSupersededError: (...args: unknown[]) => isWorkerScoreRequestSupersededErrorMock(...args),
   queueWorkerScoreRequest: (...args: unknown[]) => queueWorkerScoreRequestMock(...args)
 }))
 
@@ -60,8 +60,9 @@ describe('narrative quality worker source', () => {
     vi.clearAllMocks()
     vi.stubGlobal('self', {
       postMessage: postMessageMock,
-      addEventListener: vi.fn()
+      addEventListener: addEventListenerMock
     })
+    isWorkerScoreRequestSupersededErrorMock.mockReturnValue(false)
     loadModelMock.mockResolvedValue(undefined)
     scoreMock.mockResolvedValue(createScoreResult(50, 0.5, [50, 50]))
     createTransformersQualityScorerMock.mockReturnValue({
@@ -233,5 +234,68 @@ describe('narrative quality worker source', () => {
       }
     })
     expect(scoreMock).toHaveBeenLastCalledWith(expect.any(Object), { mode: 'full' })
+  })
+
+  it('normalizes URL, Request, and string model fetch inputs against extension assets', async () => {
+    const fetchMock = vi.fn(async () => new Response('model'))
+    vi.stubGlobal('fetch', fetchMock)
+    const { scorePayload } = await import('../../client/worker-source.js')
+
+    await scorePayload({ text: 'A response', locale: 'en' }, 10)
+    const workerFetch = transformersEnvMock.fetch as (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>
+    await workerFetch(new URL('weights.bin', 'https://models.example.test/base/'))
+    await workerFetch(new Request('https://models.example.test/config.json', { headers: { accept: 'application/json' } }))
+    await workerFetch('tokenizer.json', { cache: 'no-store' })
+
+    expect(fetchMock).toHaveBeenCalledTimes(3)
+    expect(String(fetchMock.mock.calls[0]?.[0])).toContain('weights.bin')
+    expect(fetchMock.mock.calls[1]?.[0]).toBeInstanceOf(Request)
+    expect(fetchMock.mock.calls[2]?.[0]).toBe('https://assets.example.test/extensions/gcs-narrative-quality/models/tokenizer.json')
+  })
+
+  it('clears a failed scorer initialization so the next request can retry', async () => {
+    loadModelMock.mockRejectedValueOnce(new Error('model unavailable')).mockResolvedValueOnce(undefined)
+    const { scorePayload } = await import('../../client/worker-source.js')
+
+    await expect(scorePayload({ text: 'first response' }, 11)).rejects.toThrow('model unavailable')
+    await expect(scorePayload({ text: 'second response' }, 12)).resolves.toMatchObject({ mode: 'fast' })
+    expect(createTransformersQualityScorerMock).toHaveBeenCalledTimes(2)
+  })
+
+  it('handles worker messages, defaults request data, and reports scoring failures', async () => {
+    await import('../../client/worker-source.js')
+    const listener = addEventListenerMock.mock.calls[0]?.[1] as (event: { data?: unknown }) => void
+
+    listener({ data: { type: 'ignored' } })
+    expect(postMessageMock).not.toHaveBeenCalled()
+
+    listener({ data: { type: 'score', payload: { text: 'A response' } } })
+    await vi.waitFor(() => expect(postMessageMock).toHaveBeenCalledWith(expect.objectContaining({
+      kind: 'result', requestId: 0, ok: true
+    })))
+
+    queueWorkerScoreRequestMock.mockRejectedValueOnce(new Error('worker failed'))
+    listener({ data: { type: 'score', requestId: 13, payload: { text: 'A response' } } })
+    await vi.waitFor(() => expect(postMessageMock).toHaveBeenCalledWith({
+      kind: 'error', phase: 'error', requestId: 13, ok: false, error: 'worker failed'
+    }))
+
+    queueWorkerScoreRequestMock.mockRejectedValueOnce('primitive failure')
+    listener({ data: { type: 'score', requestId: 14, payload: { text: 'A response' } } })
+    await vi.waitFor(() => expect(postMessageMock).toHaveBeenCalledWith({
+      kind: 'error', phase: 'error', requestId: 14, ok: false, error: 'QUALITY_METER_WORKER_ERROR'
+    }))
+  })
+
+  it('silently drops a superseded queued message', async () => {
+    isWorkerScoreRequestSupersededErrorMock.mockReturnValue(true)
+    await import('../../client/worker-source.js')
+    const listener = addEventListenerMock.mock.calls[0]?.[1] as (event: { data?: unknown }) => void
+    queueWorkerScoreRequestMock.mockRejectedValueOnce(new Error('superseded'))
+
+    listener({ data: { type: 'score', requestId: 15, payload: { text: 'A response' } } })
+    await new Promise(resolve => setTimeout(resolve, 0))
+
+    expect(postMessageMock).not.toHaveBeenCalledWith(expect.objectContaining({ kind: 'error' }))
   })
 })

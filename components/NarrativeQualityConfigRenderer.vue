@@ -191,6 +191,18 @@ const updateField = (value: unknown) => {
   })
 }
 
+const updateNumberField = (value: string | number) => {
+  const modelPath = schema.key
+  if (!modelPath) {
+    return
+  }
+
+  const nextValue = typeof value === 'number' ? value : Number(value ?? 0)
+  const nextModel = { ...model }
+  setModelValue(nextModel, modelPath, Number.isFinite(nextValue) ? nextValue : 0)
+  emit('update:model', nextModel)
+}
+
 watch(collectionItems, rows => {
   for (const row of rows) {
     ensureCollectionItemKey(row)
@@ -305,10 +317,7 @@ watch(collectionItems, rows => {
         :min="schema.min"
         :max="schema.max"
         :step="schema.step ?? 1"
-        @update:model-value="(value: string | number) => {
-          const nextValue = typeof value === 'number' ? value : Number(value ?? 0)
-          updateField(Number.isFinite(nextValue) ? nextValue : 0)
-        }" />
+        @update:model-value="updateNumberField" />
       <p
         v-if="schema.description"
         class="text-sm text-zinc-500 dark:text-zinc-400">

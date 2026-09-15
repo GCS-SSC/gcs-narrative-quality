@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { targetMessages } from '../i18n/targets'
+import { NarrativeQualityConfigMessages } from '../i18n/NarrativeQualityConfig'
+
 import { computed, ref, watch } from 'vue'
 import type { Ref } from 'vue'
 import type { JsonValue } from '@gcs-ssc/extensions'
@@ -35,7 +38,8 @@ const { streamId = '' } = defineProps<{
   streamId?: string
 }>()
 
-const { locale } = useExtensionI18n()
+const { locale, t: text } = useExtensionI18n(NarrativeQualityConfigMessages)
+const { t: targetText } = useExtensionI18n(targetMessages)
 const api = useExtensionApi('gcs-narrative-quality')
 
 const configSchema = configSchemaJson as NarrativeQualityPluginUiNode
@@ -55,59 +59,6 @@ const { data: catalogData, status: catalogStatus, error: catalogError } = useExt
     })
   }
 )
-
-const labels = {
-  title: { en: 'Narrative scoring setup', fr: 'Configuration de la notation narrative' },
-  description: {
-    en: 'Configure the same scoring model used by the original plugin-platform flow, scoped to the exact narrative target on this stream.',
-    fr: 'Configurez le même modèle de notation que dans le flux original de la plateforme de plugins, appliqué à la cible narrative exacte de ce volet.'
-  },
-  targetSection: { en: 'Scored Narrative Field', fr: 'Champ narratif évalué' },
-  targetDescription: {
-    en: 'Choose which narrative field this configuration applies to before editing the scoring prompt and criteria.',
-    fr: 'Choisissez le champ narratif auquel cette configuration s’applique avant de modifier la question et les critères de notation.'
-  },
-  target: { en: 'Target', fr: 'Cible' },
-  assessment: { en: 'Assessment', fr: 'Évaluation' },
-  assessmentDescription: {
-    en: 'Select which assessment schema this narrative prompt applies to.',
-    fr: 'Sélectionnez le schéma d’évaluation auquel cette question narrative s’applique.'
-  },
-  questionSelection: { en: 'Question', fr: 'Question' },
-  questionDescription: {
-    en: 'Select the exact assessment question comment that should be scored.',
-    fr: 'Sélectionnez le commentaire de question d’évaluation précis qui doit être noté.'
-  },
-  noAssessments: {
-    en: 'No assessment schemas are configured for this stream yet.',
-    fr: 'Aucun schéma d’évaluation n’est encore configuré pour ce volet.'
-  },
-  noQuestions: {
-    en: 'This assessment schema has no scoreable questions.',
-    fr: 'Ce schéma d’évaluation ne contient aucune question à noter.'
-  },
-  loadingAssessments: {
-    en: 'Loading assessment schemas...',
-    fr: 'Chargement des schémas d’évaluation...'
-  },
-  loadingError: {
-    en: 'Assessment schemas could not be loaded right now.',
-    fr: 'Les schémas d’évaluation ne peuvent pas être chargés pour le moment.'
-  },
-  enabled: {
-    en: 'Enable scoring for this target',
-    fr: 'Activer la notation pour cette cible'
-  },
-  enabledDescription: {
-    en: 'Only explicitly enabled targets render the scorer at runtime.',
-    fr: 'Seules les cibles explicitement activées affichent le scoreur à l’exécution.'
-  }
-} as const
-
-const text = (key: keyof typeof labels) => {
-  const item = labels[key]
-  return locale.value === 'fr' ? item.fr : item.en
-}
 
 const localized = (value: Record<NarrativeQualityLocale, string>) => locale.value === 'fr' ? value.fr : value.en
 
@@ -165,7 +116,7 @@ watch(state, value => {
 }, { deep: true })
 
 const targetOptions = computed(() => narrativeQualityTargetDefinitions.map(target => ({
-  label: localized(target.label),
+  label: targetText(target.labelKey),
   value: target.key
 })))
 

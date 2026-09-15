@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { messages } from '../i18n/NarrativeQualityConfigRenderer'
 import { nanoid } from 'nanoid'
 import { computed, toRaw, watch } from 'vue'
 import {
@@ -38,7 +39,7 @@ const emit = defineEmits<{
   'update:model': [value: object]
 }>()
 
-const { locale, t } = useExtensionI18n()
+const { locale, t } = useExtensionI18n(messages)
 const collectionItemKeys = new WeakMap<NarrativeQualityCriterion, string>()
 
 const fieldValue = computed(() => {
@@ -176,7 +177,7 @@ const getCollectionItemTitle = (row: NarrativeQualityCriterion, index: number) =
     return `${index + 1} - ${itemTitle}`
   }
 
-  const fallbackTitle = getText(schema.item_title_label) || t('common.item')
+  const fallbackTitle = getText(schema.item_title_label) || t('item')
   return `${fallbackTitle} ${index + 1}`
 }
 
@@ -367,7 +368,7 @@ watch(collectionItems, rows => {
         <div class="flex justify-end">
           <ExtensionButton
             icon="i-lucide-plus"
-            :label="getText(schema.add_label) || t('common.add')"
+            :label="getText(schema.add_label) || t('add')"
             variant="outline"
             class="cursor-default"
             @click="addCollectionItem" />

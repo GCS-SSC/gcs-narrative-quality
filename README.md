@@ -77,3 +77,13 @@ The extension declares:
 - assessment target route: `/api/extensions/gcs-narrative-quality/streams/[streamId]/assessment-targets`.
 
 The assessment target route is a configuration helper endpoint. It requires stream read authorization but does not require agency or stream extension enablement rows, so administrators can configure the extension before enabling it on a stream.
+
+## Translation ownership
+
+Requires SDK 0.3.0. Interface catalogs live in this package's `i18n/` directory.
+Define matching English/French keys and named placeholders with
+`defineGcsExtensionMessages`, then use `useExtensionI18n(catalog)` in UI or
+`translateGcsExtensionMessage` in shared/server code. There is no host message
+lookup or fallback. Keep extension-authored common labels and validation text in
+this package; treat bilingual domain values and already-localized errors as data.
+The package owns translation tests and includes catalogs in its coverage inventory.

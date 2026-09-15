@@ -1,3 +1,4 @@
+import type { targetMessages } from '../i18n/targets'
 import type { JsonValue } from '@gcs-ssc/extensions'
 
 export type NarrativeQualityLocale = 'en' | 'fr'
@@ -78,8 +79,8 @@ export interface NarrativeQualityConfig {
 
 export interface NarrativeQualityTargetDefinition {
   key: NarrativeQualityTargetKey
-  label: Record<NarrativeQualityLocale, string>
-  description: Record<NarrativeQualityLocale, string>
+  labelKey: keyof typeof targetMessages.en
+  descriptionKey: keyof typeof targetMessages.en
 }
 
 export type NarrativeQualityResolvedConfigKey =
@@ -106,37 +107,19 @@ export interface NarrativeQualityTarget {
 
 export const narrativeQualityTargetDefinitions: NarrativeQualityTargetDefinition[] = [
   {
-    key: 'agreement_top_level',
-    label: {
-      en: 'Agreement descriptions',
-      fr: 'Descriptions d’entente'
-    },
-    description: {
-      en: 'Scores the English and French agreement description fields.',
-      fr: 'Évalue les champs de description français et anglais de l’entente.'
-    }
+    "key": "agreement_top_level",
+    "labelKey": "agreement_top_level.label",
+    "descriptionKey": "agreement_top_level.description"
   },
   {
-    key: 'assessment_review_alignment_narrative',
-    label: {
-      en: 'Assessment review alignment',
-      fr: 'Alignement de l’examen d’évaluation'
-    },
-    description: {
-      en: 'Configure a separate narrative prompt for each assessment schema on this stream.',
-      fr: 'Configurez une question narrative distincte pour chaque schéma d’évaluation du volet.'
-    }
+    "key": "assessment_review_alignment_narrative",
+    "labelKey": "assessment_review_alignment_narrative.label",
+    "descriptionKey": "assessment_review_alignment_narrative.description"
   },
   {
-    key: 'assessment_question_comment',
-    label: {
-      en: 'Assessment question comments',
-      fr: 'Commentaires des questions d’évaluation'
-    },
-    description: {
-      en: 'Configure question-comment scoring per assessment schema and per question.',
-      fr: 'Configurez la notation des commentaires de question par schéma d’évaluation et par question.'
-    }
+    "key": "assessment_question_comment",
+    "labelKey": "assessment_question_comment.label",
+    "descriptionKey": "assessment_question_comment.description"
   }
 ]
 

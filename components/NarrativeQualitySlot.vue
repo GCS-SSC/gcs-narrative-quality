@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { NarrativeQualitySlotMessages } from '../i18n/NarrativeQualitySlot'
+
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import type { Ref } from 'vue'
 import type { GcsExtensionJsonConfig, GcsExtensionSlotContext } from '@gcs-ssc/extensions'
@@ -111,7 +113,7 @@ const {
   context?: GcsExtensionSlotContext
 }>()
 
-const { locale } = useExtensionI18n()
+const { locale, t: text } = useExtensionI18n(NarrativeQualitySlotMessages)
 
 const resultByKey: Ref<Record<string, QualityMeterResult>> = ref({})
 const errorByKey: Ref<Record<string, string>> = ref({})
@@ -119,17 +121,6 @@ const requestKeyById: Ref<Record<number, string>> = ref({})
 const latestRequestByKey: Ref<Record<string, number>> = ref({})
 const pendingScoreTimers: Ref<Record<string, ReturnType<typeof setTimeout>>> = ref({})
 const unsubscribeWorker: Ref<(() => void) | null> = ref(null)
-
-const labels = {
-  loading: { en: 'Preparing quality meter', fr: 'Préparation de l’indicateur de qualité' },
-  unavailable: { en: 'Quality meter unavailable', fr: 'Indicateur de qualité indisponible' },
-  scoring: { en: 'Scoring', fr: 'Évaluation' }
-} as const
-
-const text = (key: keyof typeof labels) => {
-  const item = labels[key]
-  return locale.value === 'fr' ? item.fr : item.en
-}
 
 const targets = computed<NarrativeQualityTarget[]>(() => resolveNarrativeQualityTargets(context as Record<string, unknown>, locale.value))
 const enabledTargets = computed(() => {

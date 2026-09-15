@@ -2,6 +2,7 @@ import vue from '@vitejs/plugin-vue'
 import { defineConfig } from 'vitest/config'
 
 export const NARRATIVE_QUALITY_COVERAGE_INCLUDE = [
+  'i18n/**/*.ts',
   'client/core.ts',
   'client/runtime.js',
   'client/worker-request-queue.js',

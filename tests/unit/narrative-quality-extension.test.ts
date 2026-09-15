@@ -1,3 +1,4 @@
+import { NarrativeQualityConfigMessages } from '../../i18n/NarrativeQualityConfig'
 import { readFile } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -381,8 +382,8 @@ describe('gcs narrative quality extension', () => {
     const helperSource = await readFile(resolve(extensionRoot, 'components/narrative-quality.ts'), 'utf8')
 
     expect(componentSource).toContain('api.path(`/streams/${streamId}/assessment-targets`)')
-    expect(componentSource).toContain('assessment: { en: \'Assessment\'')
-    expect(componentSource).toContain('questionSelection: { en: \'Question\'')
+    expect(NarrativeQualityConfigMessages.en.assessment).toBe('Assessment')
+    expect(NarrativeQualityConfigMessages.en.questionSelection).toBe('Question')
     expect(helperSource).toContain('questionComments')
     expect(componentSource).toContain('<ExtensionSection :title="text(\'targetSection\')" badge="01" :grid-cols="2">')
     expect(componentSource).toContain('<NarrativeQualityConfigRenderer')

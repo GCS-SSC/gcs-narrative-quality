@@ -7,11 +7,12 @@
     "check:language-server": "node scripts/check-vue-language-server.mjs",
     "test:unit": "vitest run --config vitest.config.ts",
     "test:coverage": "vitest run --coverage --config vitest.config.ts",
-    "typecheck": "vue-tsc --noEmit"
+    "typecheck": "vue-tsc --noEmit",
+    "test:audit": "vitest run --config vitest.audit.config.ts"
   },
   "dependencies": {
     "@browser-quality-scorer/core": "github:omarmir/quality-meter#pkg-v1.0.2",
-    "@gcs-ssc/extensions": "^0.3.0",
+    "@gcs-ssc/extensions": "^0.3.2",
     "@huggingface/transformers": "^4.1.0",
     "nanoid": "^5.1.6"
   },

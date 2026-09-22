@@ -124,7 +124,7 @@ describe('gcs narrative quality assessment targets route', () => {
 
     const db = {
       selectFrom: vi.fn((table: string) => {
-        if (table === 'Common_Review_Set_Setup') {
+        if (table === 'Transfer_Payment_Stream_Review_Set as Link') {
           return assessmentSetsQuery
         }
 
@@ -176,6 +176,11 @@ describe('gcs narrative quality assessment targets route', () => {
       questions: []
     }])
     expect(authorizeMock).toHaveBeenCalledWith('transfer_payment', 'read', streamScope)
+    expect(assessmentSetsQuery.innerJoin).toHaveBeenCalledWith('Common_Review_Set_Setup as Review_Set', 'Review_Set.id', 'Link.egcs_tp_reviewset')
+    expect(assessmentSetsQuery.innerJoin).toHaveBeenCalledWith('Common_Publication as Set_Publication', 'Set_Publication.id', 'Review_Set.id')
+    expect(assessmentSetsQuery.where).toHaveBeenCalledWith('Link.egcs_tp_transferpaymentstream', '=', 'stream-1')
+    expect(assessmentSetsQuery.where).toHaveBeenCalledWith('Link._deleted', '=', false)
+    expect(assessmentSetsQuery.where).toHaveBeenCalledWith('Set_Publication.egcs_cn_state', '=', 'published')
   })
 
   it('returns badRequest when the stream id is missing', async () => {
@@ -240,7 +245,7 @@ describe('gcs narrative quality assessment targets route', () => {
 
     const db = {
       selectFrom: vi.fn((table: string) => {
-        if (table === 'Common_Review_Set_Setup') {
+        if (table === 'Transfer_Payment_Stream_Review_Set as Link') {
           return assessmentSetsQuery
         }
 

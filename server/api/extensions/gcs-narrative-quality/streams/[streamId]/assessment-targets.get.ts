@@ -31,7 +31,7 @@ interface AssessmentQueryBuilder {
 
 interface AssessmentTargetRouteDatabase {
   selectFrom(table: 'Transfer_Payment_Stream'): ExtensionStreamContextQueryBuilder
-  selectFrom(table: 'Common_Review_Set_Setup' | 'Common_Review_Setup'): AssessmentQueryBuilder
+  selectFrom(table: 'Transfer_Payment_Stream_Review_Set as Link' | 'Common_Review_Setup'): AssessmentQueryBuilder
 }
 
 const buildQuestionKey = (sectionName: string, subSectionName: string, questionName: string) =>
@@ -92,11 +92,14 @@ export default defineGcsExtensionRouteHandler(async context => {
   }
 
   const assessmentSets = await db
-    .selectFrom('Common_Review_Set_Setup')
-    .select('Common_Review_Set_Setup.id as id')
-    .where('Common_Review_Set_Setup.egcs_cn_scopetype', '=', 'transferpaymentstream')
-    .where('Common_Review_Set_Setup.egcs_cn_scopeid', '=', streamId)
-    .where('Common_Review_Set_Setup._deleted', '=', false)
+    .selectFrom('Transfer_Payment_Stream_Review_Set as Link')
+    .innerJoin('Common_Review_Set_Setup as Review_Set', 'Review_Set.id', 'Link.egcs_tp_reviewset')
+    .innerJoin('Common_Publication as Set_Publication', 'Set_Publication.id', 'Review_Set.id')
+    .select('Review_Set.id as id')
+    .where('Link.egcs_tp_transferpaymentstream', '=', streamId)
+    .where('Link._deleted', '=', false)
+    .where('Review_Set._deleted', '=', false)
+    .where('Set_Publication.egcs_cn_state', '=', 'published')
     .execute() as AssessmentSetRow[]
 
   const assessmentSetIds = assessmentSets.map(item => String(item.id))

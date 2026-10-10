@@ -121,7 +121,8 @@ const mountComponent = async (
   return {
     wrapper,
     onUpdateModelValue,
-    parentModel
+    parentModel,
+    locale
   }
 }
 
@@ -130,6 +131,22 @@ describe('NarrativeQualityConfig', () => {
     vi.resetModules()
     vi.clearAllMocks()
     vi.stubGlobal('computed', computed)
+  })
+
+  it('names criterion removal in the current locale and keeps the remove action', async () => {
+    const { wrapper, locale, onUpdateModelValue } = await mountComponent()
+    const firstLabel = createDefaultNarrativeQualityConfig().agreementTopLevel.criteria.en[0]!.label
+    const remove = wrapper.findAll('button').find(button => button.text() === 'i-lucide-trash')!
+    expect(remove.attributes('aria-label')).toBe(`Remove 1 - ${firstLabel}`)
+
+    locale.value = 'fr'
+    await flushPromises()
+    expect(remove.attributes('aria-label')).toBe(`Supprimer 1 - ${firstLabel}`)
+    await remove.trigger('click')
+    await flushPromises()
+    const updated = onUpdateModelValue.mock.calls.at(-1)![0]
+    expect(updated.agreementTopLevel.criteria.en).toHaveLength(2)
+    expect(updated.agreementTopLevel.criteria.en.some((item: NarrativeQualityCriterion) => item.label === firstLabel)).toBe(false)
   })
 
   it('renders assessment and question selectors for assessment-scoped configuration', async () => {

@@ -395,6 +395,7 @@ watch(collectionItems, rows => {
             <div class="flex justify-end">
               <ExtensionButton
                 icon="i-lucide-trash"
+                :aria-label="t('remove', { item: getCollectionItemTitle(row, rowIndex) })"
                 color="error"
                 variant="ghost"
                 class="cursor-default"

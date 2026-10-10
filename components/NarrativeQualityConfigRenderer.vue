@@ -29,10 +29,12 @@ import type {
 
 const {
   schema = { type: 'stack', children: [] } as NarrativeQualityPluginUiNode,
-  model
+  model,
+  contentLocale
 } = defineProps<{
   schema?: NarrativeQualityPluginUiNode
   model: NarrativeQualityProfile | NarrativeQualityCriterion
+  contentLocale?: 'en' | 'fr' | undefined
 }>()
 
 const emit = defineEmits<{
@@ -41,6 +43,10 @@ const emit = defineEmits<{
 
 const { locale, t } = useExtensionI18n(messages)
 const collectionItemKeys = new WeakMap<NarrativeQualityCriterion, string>()
+const fieldLocale = computed(() => {
+  const language = schema.key?.split('.').at(-1)
+  return language === 'en' || language === 'fr' ? language : contentLocale
+})
 
 const fieldValue = computed(() => {
   if (!schema.key) {
@@ -218,6 +224,7 @@ watch(collectionItems, rows => {
       :key="`${schema.type}-${index}`"
       :model="model"
       :schema="child"
+      :content-locale="fieldLocale"
       @update:model="value => emit('update:model', value)" />
   </div>
 
@@ -227,6 +234,7 @@ watch(collectionItems, rows => {
       :key="`${schema.type}-${index}`"
       :model="model"
       :schema="child"
+      :content-locale="fieldLocale"
       @update:model="value => emit('update:model', value)" />
   </div>
 
@@ -249,6 +257,7 @@ watch(collectionItems, rows => {
         :key="`${schema.type}-${index}`"
         :model="model"
         :schema="child"
+        :content-locale="fieldLocale"
         @update:model="value => emit('update:model', value)" />
     </div>
   </ExtensionSection>
@@ -269,6 +278,7 @@ watch(collectionItems, rows => {
         :key="`${schema.type}-${index}`"
         :model="model"
         :schema="child"
+        :content-locale="fieldLocale"
         @update:model="value => emit('update:model', value)" />
     </div>
   </ExtensionAssessmentSchemaAccordionSection>
@@ -286,6 +296,7 @@ watch(collectionItems, rows => {
   <ExtensionFormField v-else-if="schema.type === 'textarea' && schema.key" :label="getText(schema.label)">
     <div class="space-y-2">
       <ExtensionRawTextarea
+        :lang="fieldLocale"
         :model-value="String(fieldValue ?? '')"
         :rows="schema.rows ?? 4"
         @update:model-value="(value: string | number) => updateField(String(value ?? ''))" />
@@ -300,6 +311,7 @@ watch(collectionItems, rows => {
   <ExtensionFormField v-else-if="schema.type === 'input' && schema.key" :label="getText(schema.label)">
     <div class="space-y-2">
       <ExtensionInput
+        :lang="fieldLocale"
         :model-value="String(fieldValue ?? '')"
         @update:model-value="(value: string | number) => updateField(String(value ?? ''))" />
       <p
@@ -390,6 +402,7 @@ watch(collectionItems, rows => {
               v-if="schema.item_schema"
               :model="row"
               :schema="schema.item_schema"
+              :content-locale="fieldLocale"
               @update:model="value => updateCollectionItem(rowIndex, value)" />
 
             <div class="flex justify-end">

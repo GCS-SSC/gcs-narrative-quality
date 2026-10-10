@@ -133,6 +133,19 @@ describe('NarrativeQualityConfig', () => {
     vi.stubGlobal('computed', computed)
   })
 
+  it('keeps known prompt and criterion content languages when UI locale changes', async () => {
+    const { wrapper, locale } = await mountComponent()
+    const check = () => {
+      expect(wrapper.findAll('textarea').map(input => input.attributes('lang'))).toEqual(['en', 'fr'])
+      const labels = wrapper.findAll('input').filter(input => /Clearly|Uses specific|coherent|Répond|Utilise|Est cohérent/.test((input.element as HTMLInputElement).value))
+      expect(labels.map(input => input.attributes('lang'))).toEqual(['en', 'en', 'en', 'fr', 'fr', 'fr'])
+    }
+    check()
+    locale.value = 'fr'
+    await flushPromises()
+    check()
+  })
+
   it('names criterion removal in the current locale and keeps the remove action', async () => {
     const { wrapper, locale, onUpdateModelValue } = await mountComponent()
     const firstLabel = createDefaultNarrativeQualityConfig().agreementTopLevel.criteria.en[0]!.label

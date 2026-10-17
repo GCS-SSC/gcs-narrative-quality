@@ -1,12 +1,13 @@
+import { routeMessages } from '../../../../../../i18n/route'
 import {
   AssessmentDefinitionSchema,
+  createGcsExtensionUserError,
   defineGcsExtensionRouteHandler,
   getReviewSchemaEffectiveContent,
   resolveExtensionStreamContext
 } from '@gcs-ssc/extensions/server'
 import type {
   ExtensionStreamContextQueryBuilder,
-  GcsExtensionRouteContext,
   ReviewSchemaContentSource
 } from '@gcs-ssc/extensions/server'
 
@@ -37,35 +38,6 @@ interface AssessmentTargetRouteDatabase {
 const buildQuestionKey = (sectionName: string, subSectionName: string, questionName: string) =>
   `${sectionName}::${subSectionName}::${questionName}`
 
-const createExtensionRouteErrorResponse = (
-  context: GcsExtensionRouteContext,
-  statusCode: number,
-  code: string,
-  message: string
-): {
-  statusCode: number
-  message: string
-  data: {
-    message: string
-    code: string
-  }
-} => {
-  const { event } = context
-  if (event.node?.res) {
-    event.node.res.statusCode = statusCode
-    event.node.res.statusMessage = message
-  }
-
-  return {
-    statusCode,
-    message,
-    data: {
-      message,
-      code
-    }
-  }
-}
-
 export default defineGcsExtensionRouteHandler(async context => {
   const db = context.db as AssessmentTargetRouteDatabase
   const streamId = typeof context.params.streamId === 'string'
@@ -73,22 +45,22 @@ export default defineGcsExtensionRouteHandler(async context => {
     : undefined
 
   if (!streamId) {
-    return createExtensionRouteErrorResponse(context, 400, 'MISSING_ID', 'Missing stream id.')
+    throw createGcsExtensionUserError({ statusCode: 400, code: 'MISSING_ID', message: { en: routeMessages.en.missingId, fr: routeMessages.fr.missingId } })
   }
 
   const streamContext = await resolveExtensionStreamContext(db, streamId)
   if (!streamContext) {
-    return createExtensionRouteErrorResponse(context, 404, 'TRANSFER_PAYMENT_STREAM_NOT_FOUND', 'Transfer payment stream not found.')
+    throw createGcsExtensionUserError({ statusCode: 404, code: 'TRANSFER_PAYMENT_STREAM_NOT_FOUND', message: { en: routeMessages.en.notFound, fr: routeMessages.fr.notFound } })
   }
 
   const authContext = context.auth
   if (!authContext) {
-    return createExtensionRouteErrorResponse(context, 401, 'AUTH_UNAUTHORIZED', 'Unauthorized.')
+    throw createGcsExtensionUserError({ statusCode: 401, code: 'AUTH_UNAUTHORIZED', message: { en: routeMessages.en.unauthorized, fr: routeMessages.fr.unauthorized } })
   }
 
   const canAccessScope = authContext.userAbilities.authorize('transfer_payment', 'read', streamContext.scope)
   if (!canAccessScope) {
-    return createExtensionRouteErrorResponse(context, 403, 'AUTH_FORBIDDEN', 'Forbidden.')
+    throw createGcsExtensionUserError({ statusCode: 403, code: 'AUTH_FORBIDDEN', message: { en: routeMessages.en.forbidden, fr: routeMessages.fr.forbidden } })
   }
 
   const assessmentSets = await db

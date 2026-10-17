@@ -185,7 +185,7 @@ describe('gcs narrative quality assessment targets route', () => {
 
   it('returns badRequest when the stream id is missing', async () => {
     const handler = (await import('../../server/api/extensions/gcs-narrative-quality/streams/[streamId]/assessment-targets.get')).default as RouteHandler
-    const result = await handler({
+    await expect(handler({
       context: {
         $db: {},
         params: {}
@@ -193,15 +193,7 @@ describe('gcs narrative quality assessment targets route', () => {
       node: {
         res: {}
       }
-    }) as {
-      statusCode: 400,
-      data: {
-        code: 'MISSING_ID'
-      }
-    }
-
-    expect(result.statusCode).toBe(400)
-    expect(result.data.code).toBe('MISSING_ID')
+    })).rejects.toMatchObject({ statusCode: 400, code: 'MISSING_ID', localizedMessage: { fr: 'Identifiant du volet manquant.' } })
   })
 
   it('returns notFound when the stream context is missing', async () => {
@@ -209,7 +201,7 @@ describe('gcs narrative quality assessment targets route', () => {
     resolveExtensionStreamContextMock.mockResolvedValueOnce(null)
 
     const handler = (await import('../../server/api/extensions/gcs-narrative-quality/streams/[streamId]/assessment-targets.get')).default as RouteHandler
-    const result = await handler({
+    await expect(handler({
       context: {
         $db: {},
         params: {
@@ -225,15 +217,7 @@ describe('gcs narrative quality assessment targets route', () => {
       node: {
         res: {}
       }
-    }) as {
-      statusCode: 404
-      data: {
-        code: string
-      }
-    }
-
-    expect(result.statusCode).toBe(404)
-    expect(result.data.code).toBe('TRANSFER_PAYMENT_STREAM_NOT_FOUND')
+    })).rejects.toMatchObject({ statusCode: 404, code: 'TRANSFER_PAYMENT_STREAM_NOT_FOUND', localizedMessage: { fr: 'Volet de paiement de transfert introuvable.' } })
     expect(authorizeMock).not.toHaveBeenCalled()
   })
 
@@ -275,7 +259,7 @@ describe('gcs narrative quality assessment targets route', () => {
 
   it('returns unauthorized when the authenticated dispatcher context is missing', async () => {
     const handler = (await import('../../server/api/extensions/gcs-narrative-quality/streams/[streamId]/assessment-targets.get')).default as RouteHandler
-    const result = await handler({
+    await expect(handler({
       context: {
         $db: {},
         params: {
@@ -285,21 +269,13 @@ describe('gcs narrative quality assessment targets route', () => {
       node: {
         res: {}
       }
-    }) as {
-      statusCode: 401
-      data: {
-        code: string
-      }
-    }
-
-    expect(result.statusCode).toBe(401)
-    expect(result.data.code).toBe('AUTH_UNAUTHORIZED')
+    })).rejects.toMatchObject({ statusCode: 401, code: 'AUTH_UNAUTHORIZED', localizedMessage: { fr: 'Non autorisé.' } })
   })
 
   it('returns forbidden when the authenticated user cannot read the stream', async () => {
     const authorizeMock = vi.fn(() => false)
     const handler = (await import('../../server/api/extensions/gcs-narrative-quality/streams/[streamId]/assessment-targets.get')).default as RouteHandler
-    const result = await handler({
+    await expect(handler({
       context: {
         $db: {},
         params: {
@@ -315,15 +291,7 @@ describe('gcs narrative quality assessment targets route', () => {
       node: {
         res: {}
       }
-    }) as {
-      statusCode: 403
-      data: {
-        code: string
-      }
-    }
-
-    expect(result.statusCode).toBe(403)
-    expect(result.data.code).toBe('AUTH_FORBIDDEN')
+    })).rejects.toMatchObject({ statusCode: 403, code: 'AUTH_FORBIDDEN', localizedMessage: { fr: 'Accès interdit.' } })
     expect(authorizeMock).toHaveBeenCalledWith('transfer_payment', 'read', streamScope)
   })
 })

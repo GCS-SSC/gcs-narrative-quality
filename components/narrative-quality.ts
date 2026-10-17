@@ -1,4 +1,5 @@
-import type { targetMessages } from '../i18n/targets'
+import { translateGcsExtensionMessage } from '@gcs-ssc/extensions'
+import { targetMessages } from '../i18n/targets'
 import type { JsonValue } from '@gcs-ssc/extensions'
 
 export type NarrativeQualityLocale = 'en' | 'fr'
@@ -622,21 +623,22 @@ const resolveTextareaNarrativeQualityTargets = (
  * Extracts non-empty English and French agreement descriptions as independent scoring targets.
  */
 const resolveAgreementNarrativeQualityTargets = (
-  agreement: Record<string, unknown>
+  agreement: Record<string, unknown>,
+  locale: NarrativeQualityLocale
 ): NarrativeQualityTarget[] => {
   const targets: NarrativeQualityTarget[] = [
     {
       key: 'agreement-description-en',
       configKey: { kind: 'agreement_top_level' },
       locale: 'en',
-      label: 'English description',
+      label: translateGcsExtensionMessage(targetMessages, locale, 'description_en'),
       text: readContextText(agreement.egcs_fc_description_en)
     },
     {
       key: 'agreement-description-fr',
       configKey: { kind: 'agreement_top_level' },
       locale: 'fr',
-      label: 'Description française',
+      label: translateGcsExtensionMessage(targetMessages, locale, 'description_fr'),
       text: readContextText(agreement.egcs_fc_description_fr)
     }
   ]
@@ -718,7 +720,7 @@ export const resolveNarrativeQualityTargets = (
 
   const agreement = isRecord(context.agreement) ? context.agreement : null
   if (agreement) {
-    return resolveAgreementNarrativeQualityTargets(agreement)
+    return resolveAgreementNarrativeQualityTargets(agreement, locale)
   }
 
   const assessment = isRecord(context.assessment) ? context.assessment : null

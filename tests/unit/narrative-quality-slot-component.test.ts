@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import { h, ref } from 'vue'
 import NarrativeQualitySlot from '../../components/NarrativeQualitySlot.vue'
-import { buildNarrativeQualityQuestionKey } from '../../components/narrative-quality'
+import { buildNarrativeQualityQuestionKey, createDefaultNarrativeQualityConfig, toNarrativeQualityJson } from '../../components/narrative-quality'
 
 interface WorkerMessageEvent {
   data: unknown
@@ -165,8 +165,25 @@ describe('NarrativeQualitySlot', () => {
     })
     await flushPromises()
 
+    expect(wrapper.get('[data-progress]').attributes('aria-label')).toBe('Narrative quality: Describe the evidence')
     expect(wrapper.text()).toContain('Strong fit')
     expect(wrapper.text()).toContain('Scored')
+  })
+
+  it('localizes the accessible progress name during an interface language change', async () => {
+    const locale = ref('en')
+    vi.stubGlobal('useI18n', () => ({ locale }))
+    const config = createDefaultNarrativeQualityConfig()
+    config.agreementTopLevel.enabled = true
+    const wrapper = mount(NarrativeQualitySlot, {
+      props: { config: toNarrativeQualityJson(config), context: { agreement: { egcs_fc_description_en: 'Evidence' } } },
+      global: { stubs: { UProgress: progressStub, UBadge: badgeStub } }
+    })
+    expect(wrapper.get('[data-progress]').attributes('aria-label')).toBe('Narrative quality: English description')
+    locale.value = 'fr'
+    await flushPromises()
+    expect(wrapper.get('[data-progress]').attributes('aria-label')).toBe('Qualité du texte : Description anglaise')
+    wrapper.unmount()
   })
 
   it('does not create worker requests when no scoreable target text is present', async () => {

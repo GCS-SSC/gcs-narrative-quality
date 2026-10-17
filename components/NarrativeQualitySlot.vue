@@ -280,6 +280,7 @@ onBeforeUnmount(() => {
       :key="target.key"
       class="space-y-2">
       <ExtensionProgress
+        :aria-label="text('meterLabel', { target: target.label })"
         :model-value="resultByKey[target.key]?.overallPercent || 0"
         :color="toneClasses(resultByKey[target.key]?.tone)"
         :max="100"

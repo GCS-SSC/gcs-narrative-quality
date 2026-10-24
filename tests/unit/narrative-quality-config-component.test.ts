@@ -6,6 +6,7 @@ import type { Ref } from 'vue'
 import type { JsonValue } from '@gcs-ssc/extensions'
 import NarrativeQualityConfig from '../../components/NarrativeQualityConfig.vue'
 import NarrativeQualityConfigRenderer from '../../components/NarrativeQualityConfigRenderer.vue'
+import configSchema from '../../ui/config.json'
 import type { NarrativeQualityPluginUiNode } from '../../components/narrative-quality-plugin-ui'
 import {
   getPluginModelValue
@@ -131,6 +132,31 @@ describe('NarrativeQualityConfig', () => {
     vi.resetModules()
     vi.clearAllMocks()
     vi.stubGlobal('computed', computed)
+  })
+
+  it('renders every developer-defined config field using its stable schema path', async () => {
+    const expected = new Set<string>()
+    type SchemaNode = { type: string; key?: string; children?: SchemaNode[]; item_schema?: SchemaNode }
+    const visit = (node: SchemaNode, prefix = '') => {
+      const path = [prefix, node.key].filter(Boolean).join('.')
+      if (['input', 'textarea', 'number', 'select', 'switch'].includes(node.type)) {
+        expected.add(`extension.gcs-narrative-quality.config.${path}`)
+      }
+      for (const child of node.children ?? []) visit(child, prefix)
+      if (node.item_schema) visit(node.item_schema, path)
+    }
+    visit(configSchema)
+    const { wrapper } = await mountComponent()
+    try {
+      const actual = new Set(wrapper.findAll('[data-ui-target]').map(field => field.attributes('data-ui-target')).filter(key => key.startsWith('extension.gcs-narrative-quality.config.')))
+      expect(actual).toEqual(expected)
+      for (const field of wrapper.findAll('[data-ui-target^="extension.gcs-narrative-quality.config."]')) {
+        expect(field.attributes('data-help-target')).toBe(field.attributes('data-ui-target'))
+      }
+      expect(expected.size).toBe(24)
+    } finally {
+      wrapper.unmount()
+    }
   })
 
   it('keeps known prompt and criterion content languages when UI locale changes', async () => {

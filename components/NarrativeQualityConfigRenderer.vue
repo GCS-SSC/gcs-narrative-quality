@@ -30,11 +30,13 @@ import type {
 const {
   schema = { type: 'stack', children: [] } as NarrativeQualityPluginUiNode,
   model,
+  fieldPath = '',
   contentLocale
 } = defineProps<{
   schema?: NarrativeQualityPluginUiNode
   model: NarrativeQualityProfile | NarrativeQualityCriterion
   contentLocale?: 'en' | 'fr' | undefined
+  fieldPath?: string
 }>()
 
 const emit = defineEmits<{
@@ -42,6 +44,9 @@ const emit = defineEmits<{
 }>()
 
 const { locale, t } = useExtensionI18n(messages)
+const targetPath = computed(() => [fieldPath, schema.key].filter(Boolean).join('.'))
+const fieldTarget = computed(() => `extension.gcs-narrative-quality.config.${targetPath.value}`)
+
 const collectionItemKeys = new WeakMap<NarrativeQualityCriterion, string>()
 const fieldLocale = computed(() => {
   const language = schema.key?.split('.').at(-1)
@@ -218,27 +223,29 @@ watch(collectionItems, rows => {
 </script>
 
 <template>
-  <div v-if="schema.type === 'stack'" class="space-y-8">
+  <div data-field-schema-source="../ui/config.json" data-field-schema-scope="extension.gcs-narrative-quality.config" data-field-schema-label-en="Narrative quality configuration" data-field-schema-label-fr="Configuration de la qualité narrative" v-if="schema.type === 'stack'" class="space-y-8">
     <NarrativeQualityConfigRenderer
       v-for="(child, index) in schema.children ?? []"
       :key="`${schema.type}-${index}`"
       :model="model"
       :schema="child"
       :content-locale="fieldLocale"
+      :field-path="fieldPath"
       @update:model="value => emit('update:model', value)" />
   </div>
 
-  <div v-else-if="schema.type === 'group'" class="grid grid-cols-1 gap-6 md:grid-cols-2">
+  <div data-field-schema-source="../ui/config.json" data-field-schema-scope="extension.gcs-narrative-quality.config" data-field-schema-label-en="Narrative quality configuration" data-field-schema-label-fr="Configuration de la qualité narrative" v-else-if="schema.type === 'group'" class="grid grid-cols-1 gap-6 md:grid-cols-2">
     <NarrativeQualityConfigRenderer
       v-for="(child, index) in schema.children ?? []"
       :key="`${schema.type}-${index}`"
       :model="model"
       :schema="child"
       :content-locale="fieldLocale"
+      :field-path="fieldPath"
       @update:model="value => emit('update:model', value)" />
   </div>
 
-  <ExtensionSection
+  <ExtensionSection data-field-schema-source="../ui/config.json" data-field-schema-scope="extension.gcs-narrative-quality.config" data-field-schema-label-en="Narrative quality configuration" data-field-schema-label-fr="Configuration de la qualité narrative"
     v-else-if="schema.type === 'section'"
     :title="getText(schema.label)"
     :badge="schema.badge"
@@ -258,11 +265,12 @@ watch(collectionItems, rows => {
         :model="model"
         :schema="child"
         :content-locale="fieldLocale"
+        :field-path="fieldPath"
         @update:model="value => emit('update:model', value)" />
     </div>
   </ExtensionSection>
 
-  <ExtensionAssessmentSchemaAccordionSection
+  <ExtensionAssessmentSchemaAccordionSection data-field-schema-source="../ui/config.json" data-field-schema-scope="extension.gcs-narrative-quality.config" data-field-schema-label-en="Narrative quality configuration" data-field-schema-label-fr="Configuration de la qualité narrative"
     v-else-if="schema.type === 'accordion'"
     :title="getText(schema.label)"
     :default-open="Boolean(schema.default_open)">
@@ -279,21 +287,22 @@ watch(collectionItems, rows => {
         :model="model"
         :schema="child"
         :content-locale="fieldLocale"
+        :field-path="fieldPath"
         @update:model="value => emit('update:model', value)" />
     </div>
   </ExtensionAssessmentSchemaAccordionSection>
 
-  <p v-else-if="schema.type === 'text'" class="text-sm text-zinc-500 dark:text-zinc-400">
+  <p data-field-schema-source="../ui/config.json" data-field-schema-scope="extension.gcs-narrative-quality.config" data-field-schema-label-en="Narrative quality configuration" data-field-schema-label-fr="Configuration de la qualité narrative" v-else-if="schema.type === 'text'" class="text-sm text-zinc-500 dark:text-zinc-400">
     {{ getText(schema.value) }}
   </p>
 
-  <div
+  <div data-field-schema-source="../ui/config.json" data-field-schema-scope="extension.gcs-narrative-quality.config" data-field-schema-label-en="Narrative quality configuration" data-field-schema-label-fr="Configuration de la qualité narrative"
     v-else-if="schema.type === 'notice'"
     class="rounded-lg border border-primary/30 bg-primary/10 p-4 text-sm text-primary dark:border-primary/35 dark:bg-primary/15">
     {{ getText(schema.value) }}
   </div>
 
-  <ExtensionFormField v-else-if="schema.type === 'textarea' && schema.key" :label="getText(schema.label)">
+  <ExtensionFormField :data-ui-target="fieldTarget" :data-help-target="fieldTarget" data-field-schema-source="../ui/config.json" data-field-schema-scope="extension.gcs-narrative-quality.config" data-field-schema-label-en="Narrative quality configuration" data-field-schema-label-fr="Configuration de la qualité narrative" v-else-if="schema.type === 'textarea' && schema.key" :label="getText(schema.label)">
     <div class="space-y-2">
       <ExtensionRawTextarea
         :lang="fieldLocale"
@@ -308,7 +317,7 @@ watch(collectionItems, rows => {
     </div>
   </ExtensionFormField>
 
-  <ExtensionFormField v-else-if="schema.type === 'input' && schema.key" :label="getText(schema.label)">
+  <ExtensionFormField :data-ui-target="fieldTarget" :data-help-target="fieldTarget" data-field-schema-source="../ui/config.json" data-field-schema-scope="extension.gcs-narrative-quality.config" data-field-schema-label-en="Narrative quality configuration" data-field-schema-label-fr="Configuration de la qualité narrative" v-else-if="schema.type === 'input' && schema.key" :label="getText(schema.label)">
     <div class="space-y-2">
       <ExtensionInput
         :lang="fieldLocale"
@@ -322,7 +331,7 @@ watch(collectionItems, rows => {
     </div>
   </ExtensionFormField>
 
-  <ExtensionFormField v-else-if="schema.type === 'number' && schema.key" :label="getText(schema.label)">
+  <ExtensionFormField :data-ui-target="fieldTarget" :data-help-target="fieldTarget" data-field-schema-source="../ui/config.json" data-field-schema-scope="extension.gcs-narrative-quality.config" data-field-schema-label-en="Narrative quality configuration" data-field-schema-label-fr="Configuration de la qualité narrative" v-else-if="schema.type === 'number' && schema.key" :label="getText(schema.label)">
     <div class="space-y-2">
       <ExtensionInput
         type="number"
@@ -339,7 +348,7 @@ watch(collectionItems, rows => {
     </div>
   </ExtensionFormField>
 
-  <ExtensionFormField v-else-if="schema.type === 'select' && schema.key" :label="getText(schema.label)">
+  <ExtensionFormField :data-ui-target="fieldTarget" :data-help-target="fieldTarget" data-field-schema-source="../ui/config.json" data-field-schema-scope="extension.gcs-narrative-quality.config" data-field-schema-label-en="Narrative quality configuration" data-field-schema-label-fr="Configuration de la qualité narrative" v-else-if="schema.type === 'select' && schema.key" :label="getText(schema.label)">
     <div class="space-y-2">
       <ExtensionSelect
         :model-value="String(fieldValue ?? '')"
@@ -355,7 +364,7 @@ watch(collectionItems, rows => {
     </div>
   </ExtensionFormField>
 
-  <ExtensionFormField v-else-if="schema.type === 'switch' && schema.key" :label="getText(schema.label)">
+  <ExtensionFormField :data-ui-target="fieldTarget" :data-help-target="fieldTarget" data-field-schema-source="../ui/config.json" data-field-schema-scope="extension.gcs-narrative-quality.config" data-field-schema-label-en="Narrative quality configuration" data-field-schema-label-fr="Configuration de la qualité narrative" v-else-if="schema.type === 'switch' && schema.key" :label="getText(schema.label)">
     <div class="space-y-2">
       <ExtensionSwitch
         :model-value="Boolean(fieldValue)"
@@ -368,7 +377,7 @@ watch(collectionItems, rows => {
     </div>
   </ExtensionFormField>
 
-  <div v-else-if="schema.type === 'collection' && schema.key" class="space-y-4">
+  <div data-field-schema-source="../ui/config.json" data-field-schema-scope="extension.gcs-narrative-quality.config" data-field-schema-label-en="Narrative quality configuration" data-field-schema-label-fr="Configuration de la qualité narrative" v-else-if="schema.type === 'collection' && schema.key" class="space-y-4">
     <ExtensionAssessmentSchemaAccordionSection :title="getText(schema.label)" :default-open="true">
       <div class="space-y-4">
         <p
@@ -403,6 +412,7 @@ watch(collectionItems, rows => {
               :model="row"
               :schema="schema.item_schema"
               :content-locale="fieldLocale"
+              :field-path="targetPath"
               @update:model="value => updateCollectionItem(rowIndex, value)" />
 
             <div class="flex justify-end">

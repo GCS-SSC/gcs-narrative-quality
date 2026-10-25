@@ -233,7 +233,7 @@ const handleCurrentProfileEnabledUpdate = (value: boolean | string) => {
 </script>
 
 <template>
-  <div class="space-y-8">
+  <div class="space-y-8" data-field-scope="extension.gcs-narrative-quality.narrative-quality-config">
     <div>
       <h3 class="text-base font-semibold text-zinc-900 dark:text-white">
         {{ text('title') }}
@@ -250,7 +250,7 @@ const handleCurrentProfileEnabledUpdate = (value: boolean | string) => {
         </p>
       </div>
 
-      <ExtensionFormField :label="text('target')">
+      <ExtensionFormField :label="text('target')" data-ui-target="extension.gcs-narrative-quality.narrative-quality-config.active-target">
         <ExtensionSelect
           v-model="activeTarget"
           :items="targetOptions"
@@ -261,7 +261,7 @@ const handleCurrentProfileEnabledUpdate = (value: boolean | string) => {
       <ExtensionFormField
         v-if="activeTarget === 'assessment_review_alignment_narrative'"
         :label="text('assessment')"
-        :description="text('assessmentDescription')">
+        :description="text('assessmentDescription')" data-ui-target="extension.gcs-narrative-quality.narrative-quality-config.selected-alignment-schema-id">
         <ExtensionSelect
           v-model="selectedAlignmentSchemaId"
           :items="assessmentOptions"
@@ -273,7 +273,7 @@ const handleCurrentProfileEnabledUpdate = (value: boolean | string) => {
       <ExtensionFormField
         v-if="showQuestionField"
         :label="text('assessment')"
-        :description="text('assessmentDescription')">
+        :description="text('assessmentDescription')" data-ui-target="extension.gcs-narrative-quality.narrative-quality-config.selected-comment-schema-id">
         <ExtensionSelect
           v-model="selectedCommentSchemaId"
           :items="assessmentOptions"
@@ -285,7 +285,7 @@ const handleCurrentProfileEnabledUpdate = (value: boolean | string) => {
       <ExtensionFormField
         v-if="showQuestionField"
         :label="text('questionSelection')"
-        :description="text('questionDescription')">
+        :description="text('questionDescription')" data-ui-target="extension.gcs-narrative-quality.narrative-quality-config.selected-question-key">
         <ExtensionSelect
           v-if="questionOptions.length > 0"
           v-model="selectedQuestionKey"
@@ -302,7 +302,7 @@ const handleCurrentProfileEnabledUpdate = (value: boolean | string) => {
       <ExtensionFormField
         v-if="canEditSelectedTarget"
         :label="text('enabled')"
-        :description="text('enabledDescription')">
+        :description="text('enabledDescription')" data-ui-target="extension.gcs-narrative-quality.narrative-quality-config.enabled">
         <ExtensionSwitch
           :model-value="currentProfileEnabled"
           @update:model-value="handleCurrentProfileEnabledUpdate" />

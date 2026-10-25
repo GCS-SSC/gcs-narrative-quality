@@ -279,7 +279,7 @@ onBeforeUnmount(() => {
       v-for="target in enabledTargets"
       :key="target.key"
       class="space-y-2">
-      <ExtensionProgress
+      <ExtensionProgress data-field-container="Read-only progress display, not an input field."
         :aria-label="text('meterLabel', { target: target.label })"
         :model-value="resultByKey[target.key]?.overallPercent || 0"
         :color="toneClasses(resultByKey[target.key]?.tone)"

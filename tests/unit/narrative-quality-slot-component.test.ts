@@ -413,6 +413,68 @@ describe('NarrativeQualitySlot', () => {
 
     expect(terminateMock).toHaveBeenCalledOnce()
     expect(wrapper.text()).toContain('Quality meter unavailable')
-    expect((globalThis as any)[sharedWorkerStateKey].worker).toBeNull()
+    expect((globalThis as any)[sharedWorkerStateKey].lifecycle.kind).toBe('failed')
   })
+  it('ignores superseded scores during debounce and cancels work on unmount', async () => {
+    const postMessage = vi.fn()
+    let receive: (event: WorkerMessageEvent) => void = () => {}
+    class WorkerStub {
+      addEventListener(type: string, handler: (event: WorkerMessageEvent) => void) {
+        if (type === 'message') receive = handler
+      }
+      postMessage = postMessage
+      terminate() {}
+    }
+    vi.stubGlobal('Worker', WorkerStub)
+    const config = createDefaultNarrativeQualityConfig()
+    config.agreementTopLevel.enabled = true
+    const wrapper = mount(NarrativeQualitySlot, {
+      props: { config: toNarrativeQualityJson(config), context: { agreement: { egcs_fc_description_en: 'First evidence' } } },
+      global: { stubs: { UProgress: progressStub, UBadge: badgeStub } }
+    })
+    vi.advanceTimersByTime(500)
+    await wrapper.setProps({ context: { agreement: { egcs_fc_description_en: 'New evidence' } } })
+    receive({ data: { kind: 'result', requestId: 1, result: { overallPercent: 99 } } })
+    await flushPromises()
+    expect(wrapper.get('[data-progress]').attributes('data-progress')).toBe('0')
+    vi.advanceTimersByTime(500)
+    receive({ data: { kind: 'result', requestId: 2, result: { overallPercent: 61 } } })
+    await flushPromises()
+    expect(wrapper.get('[data-progress]').attributes('data-progress')).toBe('61')
+    await wrapper.setProps({ context: { agreement: { egcs_fc_description_en: 'Unmounted evidence' } } })
+    wrapper.unmount()
+    vi.advanceTimersByTime(500)
+    expect(postMessage).toHaveBeenCalledTimes(2)
+  })
+
+  it('recreates a failed shared worker when a scheduled score becomes due', async () => {
+    const postMessage = vi.fn()
+    const constructed = vi.fn()
+    let failWorker: () => void = () => {}
+    class WorkerStub {
+      constructor() { constructed() }
+      addEventListener(type: string, handler: () => void) {
+        if (type === 'error') failWorker = handler
+      }
+      postMessage = postMessage
+      terminate() {}
+    }
+    vi.stubGlobal('Worker', WorkerStub)
+    const config = createDefaultNarrativeQualityConfig()
+    config.agreementTopLevel.enabled = true
+    const wrapper = mount(NarrativeQualitySlot, {
+      props: { config: toNarrativeQualityJson(config), context: { agreement: { egcs_fc_description_en: 'Initial' } } },
+      global: { stubs: { UProgress: progressStub, UBadge: badgeStub } }
+    })
+    vi.advanceTimersByTime(500)
+    await wrapper.setProps({ context: { agreement: { egcs_fc_description_en: 'Scheduled retry' } } })
+    failWorker()
+    await flushPromises()
+    expect(wrapper.text()).toContain('Quality meter unavailable')
+    vi.advanceTimersByTime(500)
+    expect(constructed).toHaveBeenCalledTimes(2)
+    expect(postMessage).toHaveBeenCalledTimes(2)
+    wrapper.unmount()
+  })
+
 })

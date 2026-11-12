@@ -39,25 +39,25 @@ const assessmentCatalog = [{
 
 const mountComponent = async (
   items = assessmentCatalog,
-  modelValue: Record<string, JsonValue> = {}
+  modelValue: Record<string, JsonValue> = {},
+  options: { streamId?: Ref<string>; fetch?: typeof fetch } = {}
 ) => {
   const locale = ref('en')
+  const streamId = options.streamId ?? ref('stream-1')
   const parentModel: Ref<Record<string, JsonValue>> = ref(modelValue)
   const onUpdateModelValue = vi.fn((value: Record<string, JsonValue>) => {
     parentModel.value = value
   })
   vi.stubGlobal('useI18n', () => ({ locale }))
-  vi.stubGlobal('useFetch', () => ({
-    data: ref({ items }),
-    status: ref('success'),
-    error: ref(null)
-  }))
+  vi.stubGlobal('fetch', options.fetch ?? vi.fn<typeof fetch>(async () =>
+    new Response(JSON.stringify({ items }), { headers: { 'content-type': 'application/json' } })
+  ))
 
   const Host = defineComponent({
     setup: () => {
       return () => h(Suspense, null, {
         default: () => h(NarrativeQualityConfig, {
-          'streamId': 'stream-1',
+          'streamId': streamId.value,
           'modelValue': parentModel.value,
           'onUpdate:modelValue': onUpdateModelValue
         })
@@ -123,7 +123,8 @@ const mountComponent = async (
     wrapper,
     onUpdateModelValue,
     parentModel,
-    locale
+    locale,
+    streamId
   }
 }
 
@@ -132,6 +133,207 @@ describe('NarrativeQualityConfig', () => {
     vi.resetModules()
     vi.clearAllMocks()
     vi.stubGlobal('computed', computed)
+  })
+
+  it('starts a catalog read when an initially empty Stream becomes available', async () => {
+    const fetchMock = vi.fn<typeof fetch>(async () => new Response(JSON.stringify({ items: assessmentCatalog })))
+    const { wrapper, streamId } = await mountComponent(assessmentCatalog, {}, { streamId: ref(''), fetch: fetchMock })
+    try {
+      expect(fetchMock).not.toHaveBeenCalled()
+      streamId.value = 'stream-enabled'
+      await flushPromises()
+      expect(fetchMock).toHaveBeenCalledTimes(1)
+      expect(fetchMock.mock.calls[0]?.[0]).toBe('/api/extensions/gcs-narrative-quality/streams/stream-enabled/assessment-targets')
+      await wrapper.findAll('select')[0]?.setValue('assessment_review_alignment_narrative')
+      expect(wrapper.text()).toContain('Program Fit')
+    } finally {
+      wrapper.unmount()
+    }
+  })
+
+  it('clears accepted Stream evidence and rejects superseded responses and failures', async () => {
+    const requests: Array<{
+      signal: AbortSignal | null | undefined
+      resolve: (value: Response) => void
+      reject: (error: Error) => void
+    }> = []
+    const fetchMock = vi.fn<typeof fetch>((_input, init) => new Promise((resolve, reject) => {
+      requests.push({ signal: init?.signal, resolve, reject })
+    }))
+    const { wrapper, streamId } = await mountComponent(assessmentCatalog, {}, { fetch: fetchMock })
+    try {
+      requests[0]?.resolve(new Response(JSON.stringify({ items: assessmentCatalog })))
+      await flushPromises()
+      await wrapper.findAll('select')[0]?.setValue('assessment_review_alignment_narrative')
+      expect(wrapper.text()).toContain('Program Fit')
+
+      streamId.value = 'stream-2'
+      await flushPromises()
+      expect(wrapper.text()).not.toContain('Program Fit')
+      expect(wrapper.text()).toContain('Loading assessment schemas...')
+      streamId.value = 'stream-3'
+      await flushPromises()
+      expect(requests[1]?.signal?.aborted).toBe(true)
+      const latestCatalog = [{ ...assessmentCatalog[0], schemaId: 'schema-3', name: { en: 'Latest Stream', fr: 'Dernier volet' } }]
+      requests[2]?.resolve(new Response(JSON.stringify({ items: latestCatalog })))
+      await flushPromises()
+      expect(wrapper.text()).toContain('Latest Stream')
+      requests[1]?.reject(new Error('Late previous Stream failure'))
+      await flushPromises()
+      expect(wrapper.text()).toContain('Latest Stream')
+      expect(wrapper.text()).not.toContain('Assessment schemas could not be loaded right now.')
+
+      streamId.value = 'stream-4'
+      await flushPromises()
+      streamId.value = 'stream-5'
+      await flushPromises()
+      expect(requests[3]?.signal?.aborted).toBe(true)
+      requests[3]?.resolve(new Response(JSON.stringify({ items: assessmentCatalog })))
+      await flushPromises()
+      expect(wrapper.text()).not.toContain('Program Fit')
+      expect(wrapper.text()).not.toContain('Latest Stream')
+      requests[4]?.resolve(new Response(JSON.stringify({ items: latestCatalog })))
+      await flushPromises()
+      expect(wrapper.text()).toContain('Latest Stream')
+    } finally {
+      wrapper.unmount()
+    }
+  })
+
+  it('preserves a controlled replacement model when its Stream changes in the same update', async () => {
+    const requests: Array<(value: Response) => void> = []
+    const fetchMock = vi.fn<typeof fetch>(() => new Promise(resolve => { requests.push(resolve) }))
+    const { wrapper, streamId, parentModel } = await mountComponent(assessmentCatalog, {}, { fetch: fetchMock })
+    try {
+      requests[0]?.(new Response(JSON.stringify({ items: assessmentCatalog })))
+      await flushPromises()
+      const replacement = createDefaultNarrativeQualityConfig()
+      replacement.agreementTopLevel.question.en = 'Replacement Stream draft'
+      streamId.value = 'stream-replacement'
+      parentModel.value = toNarrativeQualityJson(replacement)
+      await flushPromises()
+      expect((wrapper.findAll('textarea')[0]?.element as HTMLTextAreaElement).value).toBe('Replacement Stream draft')
+      requests[1]?.(new Response(JSON.stringify({ items: [] })))
+      await flushPromises()
+      expect((wrapper.findAll('textarea')[0]?.element as HTMLTextAreaElement).value).toBe('Replacement Stream draft')
+      expect(parentModel.value.agreementTopLevel.question.en).toBe('Replacement Stream draft')
+    } finally {
+      wrapper.unmount()
+    }
+  })
+
+  it('clears disabled catalogs, reports current failures, and aborts on disposal', async () => {
+    const requests: Array<{ signal: AbortSignal | null | undefined; resolve: (value: Response) => void }> = []
+    const fetchMock = vi.fn<typeof fetch>((_input, init) => new Promise(resolve => {
+      requests.push({ signal: init?.signal, resolve })
+    }))
+    const { wrapper, streamId, onUpdateModelValue } = await mountComponent(assessmentCatalog, {}, { fetch: fetchMock })
+    await wrapper.findAll('select')[0]?.setValue('assessment_review_alignment_narrative')
+    requests[0]?.resolve(new Response('{}', { status: 503 }))
+    await flushPromises()
+    expect(wrapper.text()).toContain('Assessment schemas could not be loaded right now.')
+    streamId.value = 'stream-2'
+    await flushPromises()
+    expect(wrapper.text()).not.toContain('Assessment schemas could not be loaded right now.')
+    streamId.value = ''
+    await flushPromises()
+    expect(requests[1]?.signal?.aborted).toBe(true)
+    expect(wrapper.text()).toContain('No assessment schemas are configured for this stream yet.')
+    requests[1]?.resolve(new Response(JSON.stringify({ items: assessmentCatalog })))
+    await flushPromises()
+    expect(wrapper.text()).not.toContain('Program Fit')
+    streamId.value = 'stream-3'
+    await flushPromises()
+    wrapper.unmount()
+    expect(requests[2]?.signal?.aborted).toBe(true)
+    const emissions = onUpdateModelValue.mock.calls.length
+    requests[2]?.resolve(new Response(JSON.stringify({ items: assessmentCatalog })))
+    await flushPromises()
+    expect(onUpdateModelValue).toHaveBeenCalledTimes(emissions)
+  })
+
+  it.each(['en', 'fr'])('retries the current %s catalog without losing profile drafts or duplicating pending reads', async language => {
+    const requests: Array<{ resolve: (value: Response) => void; reject: (reason: Error) => void }> = []
+    const fetchMock = vi.fn<typeof fetch>(() => new Promise((resolve, reject) => { requests.push({ resolve, reject }) }))
+    const config = createDefaultNarrativeQualityConfig()
+    config.assessments['schema-1'] = {
+      reviewAlignment: structuredClone(config.assessmentDefaults.reviewAlignment),
+      questionComments: {}
+    }
+    config.assessments['schema-1'].reviewAlignment.question.en = 'Retained assessment prompt'
+    const { wrapper, locale, parentModel } = await mountComponent(assessmentCatalog, toNarrativeQualityJson(config), { fetch: fetchMock })
+    const retryLabel = language === 'fr' ? 'Réessayer le chargement des schémas d’évaluation' : 'Retry loading assessment schemas'
+    const error = language === 'fr' ? 'Les schémas d’évaluation ne peuvent pas être chargés pour le moment.' : 'Assessment schemas could not be loaded right now.'
+    const loading = language === 'fr' ? 'Chargement des schémas d’évaluation...' : 'Loading assessment schemas...'
+    try {
+      await wrapper.findAll('textarea')[0]!.setValue('Unsaved top-level prompt')
+      await wrapper.findAll('input:not([type="checkbox"])')[0]!.setValue('')
+      locale.value = language
+      requests[0]!.reject(new Error('Initial catalog unavailable'))
+      await flushPromises()
+      await wrapper.findAll('select')[0]!.setValue('assessment_review_alignment_narrative')
+      expect(wrapper.text()).toContain(error)
+
+      const retry = wrapper.findAll('button').find(button => button.text() === retryLabel)!
+      retry.element.click()
+      retry.element.click()
+      await flushPromises()
+      expect(fetchMock).toHaveBeenCalledTimes(2)
+      expect(wrapper.text()).toContain(loading)
+      expect(wrapper.text()).not.toContain(error)
+      requests[1]!.reject(new Error('Retry temporarily unavailable'))
+      await flushPromises()
+      expect(wrapper.text()).toContain(error)
+
+      const retryAgain = wrapper.findAll('button').find(button => button.text() === retryLabel)!
+      retryAgain.element.click()
+      retryAgain.element.click()
+      await flushPromises()
+      expect(fetchMock).toHaveBeenCalledTimes(3)
+      requests[2]!.resolve(new Response(JSON.stringify({ items: assessmentCatalog })))
+      await flushPromises()
+      expect(wrapper.text()).not.toContain(error)
+      expect(wrapper.findAll<HTMLTextAreaElement>('textarea')[0]!.element.value).toBe('Retained assessment prompt')
+
+      await wrapper.findAll('select')[0]!.setValue('agreement_top_level')
+      expect(wrapper.findAll<HTMLTextAreaElement>('textarea')[0]!.element.value).toBe('Unsaved top-level prompt')
+      expect(wrapper.findAll<HTMLInputElement>('input:not([type="checkbox"])')[0]!.element.value).toBe('')
+      expect(parentModel.value.agreementTopLevel).toMatchObject({ question: { en: 'Unsaved top-level prompt' } })
+    } finally {
+      wrapper.unmount()
+    }
+  })
+
+  it('invalidates pending retries on Stream replacement and disposal', async () => {
+    const requests: Array<{
+      signal: AbortSignal | null | undefined
+      resolve: (value: Response) => void
+      reject: (reason: Error) => void
+    }> = []
+    const fetchMock = vi.fn<typeof fetch>((_input, init) => new Promise((resolve, reject) => {
+      requests.push({ signal: init?.signal, resolve, reject })
+    }))
+    const { wrapper, streamId, onUpdateModelValue } = await mountComponent(assessmentCatalog, {}, { fetch: fetchMock })
+    await wrapper.findAll('select')[0]!.setValue('assessment_review_alignment_narrative')
+    requests[0]!.reject(new Error('Initial failure'))
+    await flushPromises()
+    await wrapper.findAll('button').find(button => button.text() === 'Retry loading assessment schemas')!.trigger('click')
+    streamId.value = 'replacement-stream'
+    await flushPromises()
+    expect(requests[1]!.signal?.aborted).toBe(true)
+    expect(fetchMock.mock.calls[2]![0]).toBe('/api/extensions/gcs-narrative-quality/streams/replacement-stream/assessment-targets')
+    requests[1]!.resolve(new Response(JSON.stringify({ items: assessmentCatalog })))
+    await flushPromises()
+    expect(wrapper.text()).not.toContain('Program Fit')
+    requests[2]!.reject(new Error('Current failure'))
+    await flushPromises()
+    await wrapper.findAll('button').find(button => button.text() === 'Retry loading assessment schemas')!.trigger('click')
+    wrapper.unmount()
+    expect(requests[3]!.signal?.aborted).toBe(true)
+    const emissions = onUpdateModelValue.mock.calls.length
+    requests[3]!.resolve(new Response(JSON.stringify({ items: assessmentCatalog })))
+    await flushPromises()
+    expect(onUpdateModelValue).toHaveBeenCalledTimes(emissions)
   })
 
   it('renders every developer-defined config field using its stable schema path', async () => {
@@ -204,6 +406,37 @@ describe('NarrativeQualityConfig', () => {
     await flushPromises()
     expect(wrapper.text()).toContain('Select the exact assessment question comment that should be scored.')
     expect(wrapper.text()).toContain('Describe the evidence')
+  })
+
+  it('keeps the selected question valid when changing assessments without losing profile drafts', async () => {
+    const first = assessmentCatalog[0]!
+    const second = {
+      ...first,
+      schemaId: 'schema-2',
+      questions: [{ ...first.questions[0]!, key: 'second-question', label: { en: 'Second question', fr: 'Deuxième question' } }]
+    }
+    const { wrapper } = await mountComponent([first, second, { ...first, schemaId: 'empty-schema', questions: [] }])
+    try {
+      await wrapper.findAll('select')[0]!.setValue('assessment_question_comment')
+      await wrapper.findAll('textarea')[0]!.setValue('First question draft')
+      await wrapper.findAll('select')[1]!.setValue('schema-2')
+      expect(wrapper.findAll<HTMLSelectElement>('select')[2]!.element.value).toBe('second-question')
+      expect(wrapper.findAll('textarea').length).toBeGreaterThan(0)
+      await wrapper.findAll('textarea')[0]!.setValue('Second question draft')
+
+      await wrapper.findAll('select')[1]!.setValue('schema-1')
+      expect(wrapper.findAll<HTMLSelectElement>('select')[2]!.element.value).toBe(first.questions[0]!.key)
+      expect(wrapper.findAll<HTMLTextAreaElement>('textarea')[0]!.element.value).toBe('First question draft')
+      await wrapper.findAll('select')[1]!.setValue('schema-2')
+      expect(wrapper.findAll<HTMLTextAreaElement>('textarea')[0]!.element.value).toBe('Second question draft')
+
+      await wrapper.findAll('select')[1]!.setValue('empty-schema')
+      expect(wrapper.findAll('select')).toHaveLength(2)
+      expect(wrapper.findAll('textarea')).toHaveLength(0)
+      expect(wrapper.text()).toContain('This assessment schema has no scoreable questions.')
+    } finally {
+      wrapper.unmount()
+    }
   })
 
   it('updates the model when prompt text and criteria change', async () => {

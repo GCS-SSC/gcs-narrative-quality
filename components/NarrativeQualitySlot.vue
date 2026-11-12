@@ -39,7 +39,7 @@ interface WorkerMessage {
 }
 
 interface SharedWorkerState {
-  worker: Worker | null
+  lifecycle: { kind: 'absent' } | { kind: 'live'; worker: Worker } | { kind: 'failed' }
   requestId: number
   listeners: Set<(message: WorkerMessage) => void>
 }
@@ -54,7 +54,7 @@ const getSharedWorkerState = (): SharedWorkerState => {
 
   if (!globalScope[SHARED_WORKER_STATE_KEY]) {
     globalScope[SHARED_WORKER_STATE_KEY] = {
-      worker: null,
+      lifecycle: { kind: 'absent' },
       requestId: 1,
       listeners: new Set()
     }
@@ -65,18 +65,19 @@ const getSharedWorkerState = (): SharedWorkerState => {
 
 const getSharedWorker = () => {
   const state = getSharedWorkerState()
-  if (!state.worker) {
+  if (state.lifecycle.kind !== 'live') {
     const worker = new Worker('/extensions/gcs-narrative-quality/client/worker.js', { type: 'module' })
-    state.worker = worker
+    state.lifecycle = { kind: 'live', worker }
     worker.addEventListener('message', event => {
+      if (state.lifecycle.kind !== 'live' || state.lifecycle.worker !== worker) return
       const message = event.data as WorkerMessage
       for (const listener of state.listeners) {
         listener(message)
       }
     })
     const handleWorkerFailure = () => {
-      if (state.worker !== worker) return
-      state.worker = null
+      if (state.lifecycle.kind !== 'live' || state.lifecycle.worker !== worker) return
+      state.lifecycle = { kind: 'failed' }
       worker.terminate()
       for (const listener of state.listeners) {
         listener({ kind: 'error' })
@@ -86,7 +87,7 @@ const getSharedWorker = () => {
     worker.addEventListener('messageerror', handleWorkerFailure)
   }
 
-  return state.worker
+  return state.lifecycle.worker
 }
 
 const subscribeToSharedWorker = (listener: (message: WorkerMessage) => void) => {
@@ -115,12 +116,19 @@ const {
 
 const { locale, t: text } = useExtensionI18n(NarrativeQualitySlotMessages)
 
-const resultByKey: Ref<Record<string, QualityMeterResult>> = ref({})
-const errorByKey: Ref<Record<string, string>> = ref({})
-const requestKeyById: Ref<Record<number, string>> = ref({})
-const latestRequestByKey: Ref<Record<string, number>> = ref({})
-const pendingScoreTimers: Ref<Record<string, ReturnType<typeof setTimeout>>> = ref({})
-const unsubscribeWorker: Ref<(() => void) | null> = ref(null)
+type TargetScoreState =
+  | { kind: 'debouncing'; requestId: number; unavailable: boolean; timer: ReturnType<typeof setTimeout> }
+  | { kind: 'pending'; requestId: number; result: QualityMeterResult | null }
+  | { kind: 'success'; requestId: number; result: QualityMeterResult }
+  | { kind: 'error'; requestId: number; result: QualityMeterResult | null }
+
+const scoreByKey: Ref<Record<string, TargetScoreState>> = ref({})
+const resultByKey = computed(() => Object.fromEntries(Object.entries(scoreByKey.value).flatMap(([key, state]) =>
+  state.kind !== 'debouncing' && state.result ? [[key, state.result]] : []
+)))
+const errorByKey = computed(() => Object.fromEntries(Object.entries(scoreByKey.value).flatMap(([key, state]) =>
+  state.kind === 'error' || (state.kind === 'debouncing' && state.unavailable) ? [[key, text('unavailable')]] : []
+)))
 
 const targets = computed<NarrativeQualityTarget[]>(() => resolveNarrativeQualityTargets(context as Record<string, unknown>, locale.value))
 const enabledTargets = computed(() => {
@@ -162,85 +170,59 @@ const toneClasses = (tone: QualityMeterResult['tone']) => {
 const handleWorkerMessage = (message: WorkerMessage) => {
   const requestId = typeof message.requestId === 'number' ? message.requestId : 0
   if (message.kind === 'error' && requestId === 0) {
-    errorByKey.value = Object.fromEntries(enabledTargets.value.map(target => [
-      target.key,
-      text('unavailable')
-    ]))
-    return
-  }
-  const targetKey = requestKeyById.value[requestId]
-  if (!targetKey) {
-    return
-  }
-  if (latestRequestByKey.value[targetKey] !== requestId) {
-    return
-  }
-
-  if (message.kind === 'error') {
-    errorByKey.value = {
-      ...errorByKey.value,
-      [targetKey]: text('unavailable')
+    for (const [key, state] of Object.entries(scoreByKey.value)) {
+      if (state.kind === 'debouncing') {
+        scoreByKey.value[key] = { ...state, unavailable: true }
+        continue
+      }
+      scoreByKey.value[key] = {
+        kind: 'error', requestId: state.requestId,
+        result: state.result
+      }
     }
     return
   }
-
-  if (message.result) {
-    resultByKey.value = {
-      ...resultByKey.value,
-      [targetKey]: message.result
+  const entry = Object.entries(scoreByKey.value).find(([, state]) => state.requestId === requestId)
+  if (!entry) return
+  const [key, state] = entry
+  if (state.kind === 'debouncing') return
+  if (message.kind === 'error') {
+    scoreByKey.value[key] = { kind: 'error', requestId, result: state.result }
+  } else if (message.result) {
+    scoreByKey.value[key] = {
+      kind: message.kind === 'status' ? 'pending' : 'success',
+      requestId, result: message.result
     }
   }
 }
 
 const clearPendingScoreTimers = () => {
-  for (const timer of Object.values(pendingScoreTimers.value)) {
-    clearTimeout(timer)
+  for (const state of Object.values(scoreByKey.value)) {
+    if (state.kind === 'debouncing') clearTimeout(state.timer)
   }
-  pendingScoreTimers.value = {}
 }
 
-/**
- * Debounces scoring per target and records the request mappings before posting to the shared worker.
- */
 const scheduleScoreRequest = (target: NarrativeQualityTarget & { settings: unknown }) => {
-  const existingTimer = pendingScoreTimers.value[target.key]
-  if (existingTimer) {
-    clearTimeout(existingTimer)
-  }
-
+  const previous = scoreByKey.value[target.key]
+  if (previous?.kind === 'debouncing') clearTimeout(previous.timer)
   const requestId = createSharedRequestId()
-  requestKeyById.value[requestId] = target.key
-  latestRequestByKey.value[target.key] = requestId
-
-  pendingScoreTimers.value = {
-    ...pendingScoreTimers.value,
-    [target.key]: setTimeout(() => {
-      pendingScoreTimers.value = Object.fromEntries(
-        Object.entries(pendingScoreTimers.value).filter(([key]) => key !== target.key)
-      )
-
-      try {
-        getSharedWorker().postMessage({
-          type: 'score',
-          requestId,
-          payload: {
-            groupKey: target.key,
-            text: target.text,
-            locale: target.locale,
-            settings: target.settings
-          }
-        })
-      } catch {
-        errorByKey.value = {
-          ...errorByKey.value,
-          [target.key]: text('unavailable')
-        }
-      }
-    }, SCORE_REQUEST_DEBOUNCE_MS)
-  }
+  const timer = setTimeout(() => {
+    const current = scoreByKey.value[target.key]
+    if (current?.kind !== 'debouncing' || current.requestId !== requestId) return
+    scoreByKey.value[target.key] = { kind: 'pending', requestId, result: null }
+    try {
+      getSharedWorker().postMessage({
+        type: 'score', requestId,
+        payload: { groupKey: target.key, text: target.text, locale: target.locale, settings: target.settings }
+      })
+    } catch {
+      scoreByKey.value[target.key] = { kind: 'error', requestId, result: null }
+    }
+  }, SCORE_REQUEST_DEBOUNCE_MS)
+  scoreByKey.value[target.key] = { kind: 'debouncing', requestId, timer, unavailable: false }
 }
 
-unsubscribeWorker.value = subscribeToSharedWorker(handleWorkerMessage)
+const unsubscribeWorker = subscribeToSharedWorker(handleWorkerMessage)
 
 watch(
   () => ({
@@ -250,23 +232,19 @@ watch(
   }),
   () => {
     clearPendingScoreTimers()
-    resultByKey.value = {}
-    errorByKey.value = {}
-    requestKeyById.value = {}
-    latestRequestByKey.value = {}
+    scoreByKey.value = {}
 
     for (const target of enabledTargets.value) {
       scheduleScoreRequest(target)
     }
   },
-  { immediate: true, deep: true }
+  { immediate: true, deep: true, flush: 'sync' }
 )
 
 onBeforeUnmount(() => {
   clearPendingScoreTimers()
-  if (unsubscribeWorker.value) {
-    unsubscribeWorker.value()
-  }
+  scoreByKey.value = {}
+  unsubscribeWorker()
 })
 </script>
 

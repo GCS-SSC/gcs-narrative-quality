@@ -381,7 +381,6 @@ describe('gcs narrative quality extension', () => {
     const rendererSource = await readFile(resolve(extensionRoot, 'components/NarrativeQualityConfigRenderer.vue'), 'utf8')
     const helperSource = await readFile(resolve(extensionRoot, 'components/narrative-quality.ts'), 'utf8')
 
-    expect(componentSource).toContain('api.path(`/streams/${streamId}/assessment-targets`)')
     expect(NarrativeQualityConfigMessages.en.assessment).toBe('Assessment')
     expect(NarrativeQualityConfigMessages.en.questionSelection).toBe('Question')
     expect(helperSource).toContain('questionComments')

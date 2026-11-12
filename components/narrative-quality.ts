@@ -70,6 +70,7 @@ export interface NarrativeQualityAssessmentConfig {
 }
 
 export interface NarrativeQualityConfig {
+  questionKeyEncoding: 'percent-v1'
   agreementTopLevel: NarrativeQualityProfile
   assessmentDefaults: {
     reviewAlignment: NarrativeQualityProfile
@@ -344,13 +345,15 @@ const ensureAssessmentConfig = (
 }
 
 /**
- * Builds the persisted question key by joining its schema path names with the `::` delimiter.
+ * Escapes reserved characters so authored path components remain distinct across the `::` separators.
  */
 export const buildNarrativeQualityQuestionKey = (
   sectionName: string,
   subSectionName: string,
   questionName: string
-) => `${sectionName}::${subSectionName}::${questionName}`
+) => [sectionName, subSectionName, questionName]
+  .map(name => name.replaceAll('%', '%25').replaceAll(':', '%3A') || '%')
+  .join('::')
 
 /**
  * Creates fresh adaptive-refinement thresholds and score-band presentation defaults.
@@ -403,6 +406,7 @@ const createDefaultNarrativeQualityProfile = (
  * Creates fresh agreement and assessment default profiles with no schema-specific overrides.
  */
 export const createDefaultNarrativeQualityConfig = (): NarrativeQualityConfig => ({
+  questionKeyEncoding: 'percent-v1',
   agreementTopLevel: createDefaultNarrativeQualityProfile('agreement_top_level'),
   assessmentDefaults: {
     reviewAlignment: createDefaultNarrativeQualityProfile('assessment_review_alignment_narrative'),
@@ -425,6 +429,7 @@ export const normalizeNarrativeQualityConfig = (
   const assessmentsRoot = isRecord(root.assessments) ? root.assessments : {}
 
   const config: NarrativeQualityConfig = {
+    questionKeyEncoding: 'percent-v1',
     agreementTopLevel: normalizeProfile(
       root.agreementTopLevel ?? legacyTargets.agreement,
       defaults.agreementTopLevel,
@@ -452,14 +457,34 @@ export const normalizeNarrativeQualityConfig = (
           defaults.assessmentDefaults.reviewAlignment,
           hasOwnProfileContent(assessment.reviewAlignment)
         ),
-        questionComments: Object.fromEntries(Object.entries(questionCommentsRoot).map(([questionKey, rawProfile]) => [
-          questionKey,
-          normalizeProfile(
-            rawProfile,
-            defaults.assessmentDefaults.questionComment,
-            hasOwnProfileContent(rawProfile)
-          )
-        ]))
+        questionComments: Object.fromEntries(Object.entries(questionCommentsRoot).reduce<Map<string, NarrativeQualityProfile>>((profiles, [questionKey, rawProfile]) => {
+          const [sectionName, subSectionName, questionName, ...extraParts] = questionKey.split('::')
+          const hasSeparatedParts = sectionName !== undefined && subSectionName !== undefined && questionName !== undefined
+            && sectionName.length > 0 && subSectionName.length > 0 && questionName.length > 0
+            && extraParts.length === 0 && !questionKey.includes(':::')
+          const isLegacyKey = root.questionKeyEncoding !== 'percent-v1' || !hasSeparatedParts
+          const matchingQuestions = isLegacyKey
+            ? catalog.find(item => item.schemaId === schemaId)?.questions.filter(question =>
+              `${question.sectionName}::${question.subSectionName}::${question.questionName}` === questionKey) ?? []
+            : []
+          // Resolve legacy bytes only from a unique catalog tuple or an unambiguous separated path.
+          const [matchedQuestion] = matchingQuestions
+          const normalizedKey = matchingQuestions.length === 1 && matchedQuestion
+            ? matchedQuestion.key
+            : root.questionKeyEncoding !== 'percent-v1' && hasSeparatedParts
+              ? buildNarrativeQualityQuestionKey(sectionName, subSectionName, questionName)
+              : questionKey
+
+          // An edited encoded profile takes precedence over retained legacy bytes on later hydration.
+          if (normalizedKey === questionKey || !profiles.has(normalizedKey)) {
+            profiles.set(normalizedKey, normalizeProfile(
+              rawProfile,
+              defaults.assessmentDefaults.questionComment,
+              hasOwnProfileContent(rawProfile)
+            ))
+          }
+          return profiles
+        }, new Map()))
       }]
     }))
   }
@@ -563,9 +588,9 @@ const resolveAssessmentQuestionCommentTextareaTarget = (
   textareaText: string
 ): NarrativeQualityTarget[] => {
   const assessmentSchemaId = readContextText(textarea.assessmentSchemaId)
-  const sectionName = readContextText(textarea.sectionName)
-  const subSectionName = readContextText(textarea.subSectionName)
-  const questionName = readContextText(textarea.questionName)
+  const sectionName = asString(textarea.sectionName, '')
+  const subSectionName = asString(textarea.subSectionName, '')
+  const questionName = asString(textarea.questionName, '')
 
   if (
     textareaText.length === 0
@@ -680,9 +705,9 @@ const resolveQuestionCommentNarrativeQualityTargets = (
 ): NarrativeQualityTarget[] => {
   const comment = readContextText(context.comment)
   const question = isRecord(context.question) ? context.question : null
-  const sectionName = readContextText(context.sectionName)
-  const subSectionName = readContextText(context.subSectionName)
-  const questionName = readContextText(question?.name)
+  const sectionName = asString(context.sectionName, '')
+  const subSectionName = asString(context.subSectionName, '')
+  const questionName = asString(question?.name, '')
 
   if (comment.length === 0 || assessmentSchemaId.length === 0 || sectionName.length === 0 || subSectionName.length === 0 || questionName.length === 0) {
     return []

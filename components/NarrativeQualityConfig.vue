@@ -2,16 +2,16 @@
 import { targetMessages } from '../i18n/targets'
 import { NarrativeQualityConfigMessages } from '../i18n/NarrativeQualityConfig'
 
-import { computed, ref, watch } from 'vue'
+import { computed, onScopeDispose, ref, shallowRef, watch } from 'vue'
 import type { Ref } from 'vue'
 import type { JsonValue } from '@gcs-ssc/extensions'
 import {
+  ExtensionButton,
   ExtensionFormField,
   ExtensionSection,
   ExtensionSelect,
   ExtensionSwitch,
   useExtensionApi,
-  useExtensionFetch,
   useExtensionI18n
 } from '@gcs-ssc/extensions/ui'
 import type { NarrativeQualityPluginUiNode } from './narrative-quality-plugin-ui'
@@ -49,20 +49,53 @@ const selectedCommentSchemaId: Ref<string> = ref('')
 const selectedQuestionKey: Ref<string> = ref('')
 const state: Ref<NarrativeQualityConfig> = ref(normalizeNarrativeQualityConfig(model.value))
 
-const { data: catalogData, status: catalogStatus, error: catalogError } = useExtensionFetch<{ items: NarrativeQualityAssessmentTarget[] }>(
-  api.path(`/streams/${streamId}/assessment-targets`),
-  {
-    server: false,
-    immediate: streamId.length > 0,
-    default: () => ({
-      items: []
-    })
+type CatalogState =
+  | { kind: 'idle' }
+  | { kind: 'pending'; streamId: string; controller: AbortController }
+  | { kind: 'success'; streamId: string; items: NarrativeQualityAssessmentTarget[] }
+  | { kind: 'error' }
+  | { kind: 'disposed' }
+
+const catalogState = shallowRef<CatalogState>({ kind: 'idle' })
+const catalogStatus = computed(() => catalogState.value.kind)
+const catalogFailed = computed(() => catalogState.value.kind === 'error')
+const emptyCatalog: NarrativeQualityAssessmentTarget[] = []
+
+const loadCatalog = async (currentStreamId: string) => {
+  if (catalogState.value.kind === 'disposed') return
+  if (catalogState.value.kind === 'pending') catalogState.value.controller.abort()
+  if (!currentStreamId) {
+    catalogState.value = { kind: 'idle' }
+    return
   }
-)
+
+  const pending = { kind: 'pending', streamId: currentStreamId, controller: new AbortController() } satisfies CatalogState
+  catalogState.value = pending
+  try {
+    const response = await api.get<{ items: NarrativeQualityAssessmentTarget[] }>(
+      `/streams/${currentStreamId}/assessment-targets`,
+      { signal: pending.controller.signal }
+    )
+    if (catalogState.value !== pending) return
+    catalogState.value = { kind: 'success', streamId: currentStreamId, items: response.items }
+  } catch {
+    if (catalogState.value === pending) catalogState.value = { kind: 'error' }
+  }
+}
+
+const retryCatalog = () => {
+  if (catalogState.value.kind !== 'error') return
+  void loadCatalog(streamId)
+}
+
+onScopeDispose(() => {
+  if (catalogState.value.kind === 'pending') catalogState.value.controller.abort()
+  catalogState.value = { kind: 'disposed' }
+})
 
 const localized = (value: Record<NarrativeQualityLocale, string>) => locale.value === 'fr' ? value.fr : value.en
 
-const catalogItems = computed<NarrativeQualityAssessmentTarget[]>(() => catalogData.value?.items ?? [])
+const catalogItems = computed(() => catalogState.value.kind === 'success' ? catalogState.value.items : emptyCatalog)
 
 const resolveSelectedAssessment = (
   items: NarrativeQualityAssessmentTarget[],
@@ -89,9 +122,26 @@ const syncSelectionState = (items: NarrativeQualityAssessmentTarget[]) => {
 }
 
 watch(catalogItems, items => {
-  state.value = normalizeNarrativeQualityConfig(model.value, items)
+  const hydrated = normalizeNarrativeQualityConfig(toNarrativeQualityJson(state.value), items)
+  for (const [schemaId, assessment] of Object.entries(hydrated.assessments)) {
+    const current = state.value.assessments[schemaId]
+    if (!current) {
+      state.value.assessments[schemaId] = assessment
+      continue
+    }
+    for (const [questionKey, profile] of Object.entries(assessment.questionComments)) {
+      current.questionComments[questionKey] ??= profile
+    }
+  }
   syncSelectionState(items)
 }, { immediate: true, deep: true })
+
+watch(() => streamId, currentStreamId => {
+  selectedAlignmentSchemaId.value = ''
+  selectedCommentSchemaId.value = ''
+  selectedQuestionKey.value = ''
+  void loadCatalog(currentStreamId)
+}, { immediate: true, flush: 'sync' })
 
 const serializeConfig = (value: Record<string, JsonValue>) => JSON.stringify(value)
 
@@ -128,6 +178,10 @@ const assessmentOptions = computed(() => catalogItems.value.map(item => ({
 const selectedCommentAssessment = computed(() =>
   catalogItems.value.find(item => item.schemaId === selectedCommentSchemaId.value) ?? null
 )
+
+watch(selectedCommentAssessment, assessment => {
+  selectedQuestionKey.value = resolveSelectedQuestionKey(assessment ?? undefined, selectedQuestionKey.value)
+}, { flush: 'sync' })
 
 const questionOptions = computed(() => (selectedCommentAssessment.value?.questions ?? []).map(item => ({
   label: localized(item.label),
@@ -197,14 +251,14 @@ const showLoadingState = computed(() =>
 const showNoAssessments = computed(() =>
   activeTarget.value !== 'agreement_top_level'
   && catalogStatus.value !== 'pending'
-  && !catalogError.value
+  && !catalogFailed.value
   && catalogItems.value.length === 0
 )
 
 const showNoQuestions = computed(() =>
   activeTarget.value === 'assessment_question_comment'
   && catalogStatus.value !== 'pending'
-  && !catalogError.value
+  && !catalogFailed.value
   && catalogItems.value.length > 0
   && questionOptions.value.length === 0
 )
@@ -212,7 +266,7 @@ const showNoQuestions = computed(() =>
 const showCatalogError = computed(() =>
   activeTarget.value !== 'agreement_top_level'
   && catalogStatus.value !== 'pending'
-  && Boolean(catalogError.value)
+  && catalogFailed.value
 )
 
 const handleProfileUpdate = (value: object) => {
@@ -316,8 +370,9 @@ const handleCurrentProfileEnabledUpdate = (value: boolean | string) => {
 
       <div
         v-else-if="showCatalogError"
-        class="text-sm text-error md:col-span-2">
-        {{ text('loadingError') }}
+        class="space-y-2 text-sm md:col-span-2">
+        <p class="text-error">{{ text('loadingError') }}</p>
+        <ExtensionButton type="button" color="neutral" variant="outline" :label="text('retryCatalog')" @click="retryCatalog" />
       </div>
 
       <div

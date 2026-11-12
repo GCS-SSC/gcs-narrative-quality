@@ -1,3 +1,4 @@
+import { buildNarrativeQualityQuestionKey } from '../../../../../../components/narrative-quality'
 import { routeMessages } from '../../../../../../i18n/route'
 import {
   AssessmentDefinitionSchema,
@@ -34,9 +35,6 @@ interface AssessmentTargetRouteDatabase {
   selectFrom(table: 'Transfer_Payment_Stream'): ExtensionStreamContextQueryBuilder
   selectFrom(table: 'Transfer_Payment_Stream_Review_Set as Link' | 'Common_Review_Setup'): AssessmentQueryBuilder
 }
-
-const buildQuestionKey = (sectionName: string, subSectionName: string, questionName: string) =>
-  `${sectionName}::${subSectionName}::${questionName}`
 
 export default defineGcsExtensionRouteHandler(async context => {
   const db = context.db as AssessmentTargetRouteDatabase
@@ -112,7 +110,7 @@ export default defineGcsExtensionRouteHandler(async context => {
           }
 
           return [{
-            key: buildQuestionKey(section.name, subSection.name, question.name),
+            key: buildNarrativeQualityQuestionKey(section.name, subSection.name, question.name),
             sectionName: section.name,
             subSectionName: subSection.name,
             questionName: question.name,

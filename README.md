@@ -27,9 +27,10 @@ The extension uses one browser worker per page. Multiple mounted runtime slots s
 
 The queue:
 
-- reuses the same in-flight promise for identical requests;
+- shares one in-flight execution for identical inputs, with independent target subscriptions;
 - serializes distinct scoring requests through one execution lane;
-- drops stale pending requests for the same target when newer text arrives;
+- replaces only the changed target's subscription when newer text arrives;
+- drops queued scoring work only after its last subscriber is replaced;
 - keeps model loading behind one worker-local scorer promise.
 
 This prevents pages with several scored textareas from spawning one model per field or overwhelming lower-power browsers with concurrent inference.

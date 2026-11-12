@@ -35186,9 +35186,9 @@ var WorkerScoreRequestSupersededError = class extends Error {
     this.name = "WorkerScoreRequestSupersededError";
   }
 };
-var isScoreExecuting = false;
+var executionState = { kind: "idle" };
 var pendingScoreQueue = [];
-var pendingScoreByGroup = /* @__PURE__ */ new Map();
+var scoreSubscriberByGroup = /* @__PURE__ */ new Map();
 var scoreResultCache = /* @__PURE__ */ new Map();
 var scoreInFlightByCacheKey = /* @__PURE__ */ new Map();
 var createWorkerScoreCacheKey = ({
@@ -35205,77 +35205,79 @@ var createWorkerScoreCacheKey = ({
   requestConfig
 });
 var isWorkerScoreRequestSupersededError = (error) => error instanceof WorkerScoreRequestSupersededError;
+var settleScoreSubscribers = (execution, settle) => {
+  for (const subscriber of execution.subscribers) {
+    if (scoreSubscriberByGroup.get(subscriber.groupKey) === subscriber) {
+      scoreSubscriberByGroup.delete(subscriber.groupKey);
+    }
+    settle(subscriber);
+  }
+  execution.subscribers.clear();
+};
+var supersedeScoreSubscriber = (subscriber) => {
+  const execution = subscriber.execution;
+  execution.subscribers.delete(subscriber);
+  scoreSubscriberByGroup.delete(subscriber.groupKey);
+  subscriber.reject(new WorkerScoreRequestSupersededError());
+  const pendingIndex = pendingScoreQueue.indexOf(execution);
+  if (execution.subscribers.size === 0 && pendingIndex >= 0) {
+    pendingScoreQueue.splice(pendingIndex, 1);
+    scoreInFlightByCacheKey.delete(execution.cacheKey);
+  }
+};
 var runNextScoreRequest = () => {
-  if (isScoreExecuting) {
+  if (executionState.kind === "running") {
     return;
   }
   const next = pendingScoreQueue.shift();
   if (!next) {
     return;
   }
-  if (next.groupKey && pendingScoreByGroup.get(next.groupKey) === next) {
-    pendingScoreByGroup.delete(next.groupKey);
-  }
-  isScoreExecuting = true;
+  const execution = { kind: "running", owner: next };
+  executionState = execution;
   void Promise.resolve().then(async () => await next.run()).then((result) => {
-    next.resolve(result);
+    if (scoreInFlightByCacheKey.get(next.cacheKey) === next) {
+      scoreResultCache.set(next.cacheKey, Promise.resolve(result));
+      scoreInFlightByCacheKey.delete(next.cacheKey);
+    }
+    settleScoreSubscribers(next, (subscriber) => subscriber.resolve(result));
   }).catch((error) => {
-    next.reject(error);
+    if (scoreInFlightByCacheKey.get(next.cacheKey) === next) {
+      scoreInFlightByCacheKey.delete(next.cacheKey);
+    }
+    settleScoreSubscribers(next, (subscriber) => subscriber.reject(error));
   }).finally(() => {
-    isScoreExecuting = false;
+    if (executionState !== execution) return;
+    executionState = { kind: "idle" };
     runNextScoreRequest();
   });
 };
 var queueWorkerScoreRequest = (cacheKey, run, options = {}) => {
-  const cached = scoreResultCache.get(cacheKey);
-  if (cached) {
-    return cached;
+  const groupKey = typeof options.groupKey === "string" && options.groupKey.length > 0 ? options.groupKey : "";
+  const previous = scoreSubscriberByGroup.get(groupKey);
+  if (previous) {
+    if (previous.execution.cacheKey === cacheKey) return previous.promise;
+    supersedeScoreSubscriber(previous);
   }
-  const existing = scoreInFlightByCacheKey.get(cacheKey);
-  if (existing) {
-    return existing;
+  const cached = scoreResultCache.get(cacheKey);
+  if (cached) return cached;
+  let execution = scoreInFlightByCacheKey.get(cacheKey);
+  if (!execution) {
+    execution = { cacheKey, run, subscribers: /* @__PURE__ */ new Set() };
+    scoreInFlightByCacheKey.set(cacheKey, execution);
+    pendingScoreQueue.push(execution);
   }
   let resolveTask;
   let rejectTask;
-  const task = new Promise((resolve, reject) => {
+  const promise = new Promise((resolve, reject) => {
     resolveTask = resolve;
     rejectTask = reject;
   });
-  const groupKey = typeof options.groupKey === "string" && options.groupKey.length > 0 ? options.groupKey : "";
-  const queueItem = {
-    cacheKey,
-    groupKey,
-    run,
-    resolve: resolveTask,
-    reject: rejectTask
-  };
-  if (groupKey) {
-    const previous = pendingScoreByGroup.get(groupKey);
-    if (previous) {
-      const previousIndex = pendingScoreQueue.indexOf(previous);
-      if (previousIndex >= 0) {
-        pendingScoreQueue.splice(previousIndex, 1);
-      }
-      scoreResultCache.delete(previous.cacheKey);
-      scoreInFlightByCacheKey.delete(previous.cacheKey);
-      previous.reject(new WorkerScoreRequestSupersededError());
-    }
-    pendingScoreByGroup.set(groupKey, queueItem);
-  }
-  pendingScoreQueue.push(queueItem);
-  scoreResultCache.set(cacheKey, task);
-  scoreInFlightByCacheKey.set(cacheKey, task);
-  task.catch(() => {
-    if (scoreResultCache.get(cacheKey) === task) {
-      scoreResultCache.delete(cacheKey);
-    }
-  }).finally(() => {
-    if (scoreInFlightByCacheKey.get(cacheKey) === task) {
-      scoreInFlightByCacheKey.delete(cacheKey);
-    }
-  });
+  const subscriber = { execution, groupKey, promise, resolve: resolveTask, reject: rejectTask };
+  execution.subscribers.add(subscriber);
+  if (groupKey) scoreSubscriberByGroup.set(groupKey, subscriber);
   runNextScoreRequest();
-  return task;
+  return promise;
 };
 
 // client/worker-source.js
@@ -35285,7 +35287,7 @@ var MODEL_BASE_URL = new URL(MODEL_BASE_PATH);
 var MODEL_REMOTE_HOST = MODEL_BASE_URL.origin;
 var MODEL_REMOTE_PATH_TEMPLATE = `${MODEL_BASE_URL.pathname}{model}/`;
 var MIN_REFINING_DISPLAY_MS = 450;
-var scorerPromise = null;
+var scorerState = { kind: "absent" };
 var sleep = (durationMs) => new Promise((resolve) => setTimeout(resolve, durationMs));
 var resolveWorkerFetchUrl = (input) => {
   if (input instanceof URL) {
@@ -35297,7 +35299,8 @@ var resolveWorkerFetchUrl = (input) => {
   return new URL(String(input), MODEL_BASE_PATH);
 };
 var getScorer = async () => {
-  if (!scorerPromise) {
+  if (scorerState.kind === "ready") return scorerState.scorer;
+  if (scorerState.kind !== "loading") {
     const pendingScorer = (async () => {
       env2.backends.onnx.wasm.wasmPaths = {
         mjs: `${WASM_BASE_PATH}ort-wasm-simd-threaded.asyncify.mjs`,
@@ -35323,14 +35326,15 @@ var getScorer = async () => {
       await scorer.loadModel();
       return scorer;
     })();
-    pendingScorer.catch(() => {
-      if (scorerPromise === pendingScorer) {
-        scorerPromise = null;
-      }
+    const loading = { kind: "loading", promise: pendingScorer };
+    scorerState = loading;
+    pendingScorer.then((scorer) => {
+      if (scorerState === loading) scorerState = { kind: "ready", scorer };
+    }, () => {
+      if (scorerState === loading) scorerState = { kind: "absent" };
     });
-    scorerPromise = pendingScorer;
   }
-  return await scorerPromise;
+  return await scorerState.promise;
 };
 var scorePayload = async (payload, requestId) => {
   const text = String(payload.text ?? "").trim();

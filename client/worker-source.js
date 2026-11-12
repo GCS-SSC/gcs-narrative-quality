@@ -24,7 +24,8 @@ const MODEL_REMOTE_HOST = MODEL_BASE_URL.origin
 const MODEL_REMOTE_PATH_TEMPLATE = `${MODEL_BASE_URL.pathname}{model}/`
 const MIN_REFINING_DISPLAY_MS = 450
 
-let scorerPromise = null
+/** @type {{ kind: 'absent' } | { kind: 'loading', promise: Promise<ReturnType<typeof createTransformersQualityScorer>> } | { kind: 'ready', scorer: ReturnType<typeof createTransformersQualityScorer> }} */
+let scorerState = { kind: 'absent' }
 
 const sleep = (durationMs) =>
   new Promise(resolve => setTimeout(resolve, durationMs))
@@ -53,7 +54,8 @@ const resolveWorkerFetchUrl = input => {
  * @returns {Promise<ReturnType<typeof createTransformersQualityScorer>>} Shared scorer promise; failed initialization is cleared so a later call can retry.
  */
 const getScorer = async () => {
-  if (!scorerPromise) {
+  if (scorerState.kind === 'ready') return scorerState.scorer
+  if (scorerState.kind !== 'loading') {
     const pendingScorer = (async () => {
       transformersEnv.backends.onnx.wasm.wasmPaths = {
         mjs: `${WASM_BASE_PATH}ort-wasm-simd-threaded.asyncify.mjs`,
@@ -92,16 +94,16 @@ const getScorer = async () => {
       return scorer
     })()
 
-    pendingScorer.catch(() => {
-      if (scorerPromise === pendingScorer) {
-        scorerPromise = null
-      }
+    const loading = { kind: 'loading', promise: pendingScorer }
+    scorerState = loading
+    pendingScorer.then(scorer => {
+      if (scorerState === loading) scorerState = { kind: 'ready', scorer }
+    }, () => {
+      if (scorerState === loading) scorerState = { kind: 'absent' }
     })
-
-    scorerPromise = pendingScorer
   }
 
-  return await scorerPromise
+  return await scorerState.promise
 }
 
 /**
@@ -110,7 +112,7 @@ const getScorer = async () => {
  * @param {Record<string, unknown>} payload Structured payload received from the host worker bridge.
  * @param {number} requestId Host-issued score request id.
  * @returns {Promise<Record<string, unknown>>} Final localized score payload, or an empty object when required input is absent.
- * @throws {WorkerScoreRequestSupersededError} When a newer pending score replaces the same group.
+ * @throws {WorkerScoreRequestSupersededError} When a newer score replaces the same target subscription.
  */
 export const scorePayload = async (payload, requestId) => {
   const text = String(payload.text ?? '').trim()

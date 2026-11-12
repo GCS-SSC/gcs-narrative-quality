@@ -15,6 +15,7 @@ export const NarrativeQualityConfigMessages = defineGcsExtensionMessages({
     "noQuestions": "This assessment schema has no scoreable questions.",
     "loadingAssessments": "Loading assessment schemas...",
     "loadingError": "Assessment schemas could not be loaded right now.",
+    "retryCatalog": "Retry loading assessment schemas",
     "enabled": "Enable scoring for this target",
     "enabledDescription": "Only explicitly enabled targets render the scorer at runtime."
   },
@@ -32,6 +33,7 @@ export const NarrativeQualityConfigMessages = defineGcsExtensionMessages({
     "noQuestions": "Ce schéma d’évaluation ne contient aucune question à noter.",
     "loadingAssessments": "Chargement des schémas d’évaluation...",
     "loadingError": "Les schémas d’évaluation ne peuvent pas être chargés pour le moment.",
+    "retryCatalog": "Réessayer le chargement des schémas d’évaluation",
     "enabled": "Activer la notation pour cette cible",
     "enabledDescription": "Seules les cibles explicitement activées affichent le scoreur à l’exécution."
   }
